@@ -1,0 +1,51 @@
+# Laravel application key / secrets
+.env
+.env.backup
+.env.production
+
+# PHP dependencies
+/vendor/
+
+# Laravel compiled & cached files
+/bootstrap/cache/*.php
+/public/hot
+/public/storage
+/public/build
+/storage/*.key
+
+# Laravel logs
+/storage/logs/*.log
+
+# Node dependencies (for Vite/Mix)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Vite build output
+/public/build/
+
+# PHPUnit
+.phpunit.result.cache
+.phpunit.cache/
+
+# Coverage reports
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor directories
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Homestead / Vagrant
+Homestead.json
+Homestead.yaml
+auth.json

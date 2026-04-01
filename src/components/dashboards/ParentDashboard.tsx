@@ -1,0 +1,113 @@
+import { BarChart3, CreditCard, Calendar, TrendingUp, BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+
+const quickActions = [
+  { icon: BarChart3, label: "Grades", path: "/performance", color: "bg-secondary/15 text-secondary" },
+  { icon: CreditCard, label: "Payments", path: "/payments", color: "bg-success/15 text-success" },
+  { icon: Calendar, label: "Timetable", path: "/timetable", color: "bg-primary/10 text-primary" },
+  { icon: BookOpen, label: "Subjects", path: "/performance", color: "bg-warning/15 text-warning" },
+];
+
+const recentGrades = [
+  { subject: "Mathematics", score: 85, total: 100, grade: "A" },
+  { subject: "English", score: 78, total: 100, grade: "B+" },
+  { subject: "Science", score: 92, total: 100, grade: "A+" },
+];
+
+const ParentDashboard = () => {
+  const { user } = useAuth();
+
+  return (
+    <div className="animate-fade-in space-y-6">
+      {/* Child Info Card */}
+      <div className="rounded-2xl bg-card p-5 shadow-card">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary/15 text-2xl">
+            👧
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-card-foreground">{user?.childName || "Emma Doe"}</h2>
+            <p className="text-sm text-muted-foreground">Class: Nursery 2 • Age: 4 years</p>
+          </div>
+        </div>
+        <div className="mt-4 flex gap-3">
+          <div className="flex-1 rounded-xl bg-success/10 px-3 py-2 text-center">
+            <p className="text-lg font-bold text-success">85%</p>
+            <p className="text-xs text-muted-foreground">Average</p>
+          </div>
+          <div className="flex-1 rounded-xl bg-secondary/10 px-3 py-2 text-center">
+            <p className="text-lg font-bold text-secondary">12/15</p>
+            <p className="text-xs text-muted-foreground">Attendance</p>
+          </div>
+          <div className="flex-1 rounded-xl bg-primary/10 px-3 py-2 text-center">
+            <p className="text-lg font-bold text-primary">3rd</p>
+            <p className="text-xs text-muted-foreground">Rank</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-4 gap-3">
+        {quickActions.map((action) => (
+          <Link
+            key={action.label}
+            to={action.path}
+            className="flex flex-col items-center gap-2 rounded-2xl bg-card p-3 shadow-soft transition-all active:scale-95"
+          >
+            <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${action.color}`}>
+              <action.icon className="h-5 w-5" />
+            </div>
+            <span className="text-xs font-semibold text-card-foreground">{action.label}</span>
+          </Link>
+        ))}
+      </div>
+
+      {/* Payment Status */}
+      <div className="rounded-2xl bg-card p-5 shadow-card">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-bold text-card-foreground">Fee Status</h3>
+          <Link to="/payments" className="text-xs font-semibold text-secondary">View All</Link>
+        </div>
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">Total Fees</span>
+          <span className="font-bold text-card-foreground">₦120,000</span>
+        </div>
+        <div className="mb-2 h-3 overflow-hidden rounded-full bg-muted">
+          <div className="h-full w-[42%] rounded-full bg-secondary transition-all" />
+        </div>
+        <div className="flex justify-between text-xs">
+          <span className="font-semibold text-success">Paid: ₦50,000</span>
+          <span className="font-semibold text-destructive">Balance: ₦70,000</span>
+        </div>
+      </div>
+
+      {/* Recent Grades */}
+      <div className="rounded-2xl bg-card p-5 shadow-card">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-bold text-card-foreground">Recent Grades</h3>
+          <Link to="/performance" className="text-xs font-semibold text-secondary">See All</Link>
+        </div>
+        <div className="space-y-3">
+          {recentGrades.map((g) => (
+            <div key={g.subject} className="flex items-center justify-between rounded-xl bg-accent/50 px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-card-foreground">{g.subject}</p>
+                <p className="text-xs text-muted-foreground">{g.score}/{g.total}</p>
+              </div>
+              <div className={`flex h-9 w-9 items-center justify-center rounded-lg font-bold text-sm ${
+                g.score >= 90 ? "bg-success/15 text-success" :
+                g.score >= 80 ? "bg-secondary/15 text-secondary" :
+                "bg-warning/15 text-warning"
+              }`}>
+                {g.grade}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ParentDashboard;

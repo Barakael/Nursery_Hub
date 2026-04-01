@@ -1,11 +1,11 @@
-import { BarChart3, CreditCard, Calendar, TrendingUp, BookOpen } from "lucide-react";
+import { BarChart3, CreditCard, Calendar, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const quickActions = [
-  { icon: BarChart3, label: "Grades", path: "/performance", color: "bg-secondary/15 text-secondary" },
+  { icon: BarChart3, label: "Grades", path: "/performance", color: "bg-primary/10 text-primary" },
   { icon: CreditCard, label: "Payments", path: "/payments", color: "bg-success/15 text-success" },
-  { icon: Calendar, label: "Timetable", path: "/timetable", color: "bg-primary/10 text-primary" },
+  { icon: Calendar, label: "Timetable", path: "/timetable", color: "bg-secondary/10 text-secondary" },
   { icon: BookOpen, label: "Subjects", path: "/performance", color: "bg-warning/15 text-warning" },
 ];
 
@@ -23,7 +23,7 @@ const ParentDashboard = () => {
       {/* Child Info Card */}
       <div className="rounded-2xl bg-card p-5 shadow-card">
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary/15 text-2xl">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-2xl">
             👧
           </div>
           <div>
@@ -36,12 +36,12 @@ const ParentDashboard = () => {
             <p className="text-lg font-bold text-success">85%</p>
             <p className="text-xs text-muted-foreground">Average</p>
           </div>
-          <div className="flex-1 rounded-xl bg-secondary/10 px-3 py-2 text-center">
-            <p className="text-lg font-bold text-secondary">12/15</p>
+          <div className="flex-1 rounded-xl bg-primary/10 px-3 py-2 text-center">
+            <p className="text-lg font-bold text-primary">12/15</p>
             <p className="text-xs text-muted-foreground">Attendance</p>
           </div>
-          <div className="flex-1 rounded-xl bg-primary/10 px-3 py-2 text-center">
-            <p className="text-lg font-bold text-primary">3rd</p>
+          <div className="flex-1 rounded-xl bg-secondary/10 px-3 py-2 text-center">
+            <p className="text-lg font-bold text-secondary">3rd</p>
             <p className="text-xs text-muted-foreground">Rank</p>
           </div>
         </div>
@@ -67,14 +67,14 @@ const ParentDashboard = () => {
       <div className="rounded-2xl bg-card p-5 shadow-card">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-bold text-card-foreground">Fee Status</h3>
-          <Link to="/payments" className="text-xs font-semibold text-secondary">View All</Link>
+          <Link to="/payments" className="text-xs font-semibold text-primary">View All</Link>
         </div>
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Total Fees</span>
           <span className="font-bold text-card-foreground">₦120,000</span>
         </div>
         <div className="mb-2 h-3 overflow-hidden rounded-full bg-muted">
-          <div className="h-full w-[42%] rounded-full bg-secondary transition-all" />
+          <div className="h-full w-[42%] rounded-full bg-primary transition-all" />
         </div>
         <div className="flex justify-between text-xs">
           <span className="font-semibold text-success">Paid: ₦50,000</span>
@@ -86,7 +86,7 @@ const ParentDashboard = () => {
       <div className="rounded-2xl bg-card p-5 shadow-card">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-bold text-card-foreground">Recent Grades</h3>
-          <Link to="/performance" className="text-xs font-semibold text-secondary">See All</Link>
+          <Link to="/performance" className="text-xs font-semibold text-primary">See All</Link>
         </div>
         <div className="space-y-3">
           {recentGrades.map((g) => (
@@ -97,7 +97,7 @@ const ParentDashboard = () => {
               </div>
               <div className={`flex h-9 w-9 items-center justify-center rounded-lg font-bold text-sm ${
                 g.score >= 90 ? "bg-success/15 text-success" :
-                g.score >= 80 ? "bg-secondary/15 text-secondary" :
+                g.score >= 80 ? "bg-primary/10 text-primary" :
                 "bg-warning/15 text-warning"
               }`}>
                 {g.grade}

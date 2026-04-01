@@ -58,11 +58,11 @@ const BottomNav = () => {
               to={item.path}
               className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
                 isActive
-                  ? "text-secondary"
+                  ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <item.icon className={`h-5 w-5 ${isActive ? "text-secondary" : ""}`} />
+              <item.icon className={`h-5 w-5 ${isActive ? "text-primary" : ""}`} />
               <span>{item.label}</span>
             </Link>
           );

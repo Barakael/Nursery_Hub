@@ -9,8 +9,8 @@ const subjects = [
 
 const gradeColor = (score: number) => {
   if (score >= 90) return "bg-success/15 text-success";
-  if (score >= 80) return "bg-secondary/15 text-secondary";
-  if (score >= 70) return "bg-primary/10 text-primary";
+  if (score >= 80) return "bg-primary/10 text-primary";
+  if (score >= 70) return "bg-secondary/10 text-secondary";
   return "bg-warning/15 text-warning";
 };
 
@@ -22,7 +22,7 @@ const PerformancePage = () => {
       {/* Summary */}
       <div className="rounded-2xl bg-card p-5 shadow-card text-center">
         <p className="text-sm text-muted-foreground">Overall Average</p>
-        <p className="text-4xl font-extrabold text-secondary">{avg}%</p>
+        <p className="text-4xl font-extrabold text-primary">{avg}%</p>
         <p className="text-xs text-muted-foreground mt-1">{subjects.length} Subjects • Term 1</p>
       </div>
 

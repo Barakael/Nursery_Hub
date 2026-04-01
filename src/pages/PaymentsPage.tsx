@@ -1,4 +1,4 @@
-import { CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { CheckCircle, AlertCircle } from "lucide-react";
 
 const payments = [
   { id: 1, date: "Mar 28, 2026", amount: 50000, method: "Bank Transfer", ref: "PAY-001" },
@@ -19,7 +19,7 @@ const PaymentsPage = () => {
         <p className="text-3xl font-extrabold text-primary-foreground">₦{totalFee.toLocaleString()}</p>
         <div className="mt-4 h-3 overflow-hidden rounded-full bg-primary-foreground/20">
           <div
-            className="h-full rounded-full bg-secondary transition-all"
+            className="h-full rounded-full bg-primary-foreground transition-all"
             style={{ width: `${percent}%` }}
           />
         </div>

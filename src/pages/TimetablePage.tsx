@@ -48,7 +48,7 @@ const TimetablePage = () => {
         <div className="space-y-3">
           {subjectTimetable.map((day) => (
             <div key={day.day} className="rounded-2xl bg-card p-4 shadow-soft">
-              <p className="mb-2 text-sm font-bold text-secondary">{day.day}</p>
+              <p className="mb-2 text-sm font-bold text-primary">{day.day}</p>
               <div className="flex flex-wrap gap-2">
                 {day.subjects.map((s, i) => (
                   <span
@@ -69,7 +69,7 @@ const TimetablePage = () => {
         <div className="space-y-3">
           {mealTimetable.map((day) => (
             <div key={day.day} className="rounded-2xl bg-card p-4 shadow-soft">
-              <p className="mb-3 text-sm font-bold text-secondary">{day.day}</p>
+              <p className="mb-3 text-sm font-bold text-primary">{day.day}</p>
               <div className="space-y-2 text-sm">
                 {[
                   { label: "🌅 Breakfast", value: day.breakfast },

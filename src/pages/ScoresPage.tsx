@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 
 const students = [
   { id: 1, name: "Emma Doe", class: "Nursery 2", scores: { Mathematics: 85, English: 78 } },
@@ -52,7 +51,7 @@ const ScoresPage = () => {
               ) : (
                 <button
                   onClick={() => setEditing(s.id)}
-                  className="rounded-xl bg-secondary/15 px-4 py-2 text-sm font-bold text-secondary transition-all active:scale-95"
+                  className="rounded-xl bg-primary/10 px-4 py-2 text-sm font-bold text-primary transition-all active:scale-95"
                 >
                   {s.scores.Mathematics}/100
                 </button>
@@ -62,7 +61,7 @@ const ScoresPage = () => {
         ))}
       </div>
 
-      <button className="w-full rounded-2xl bg-secondary py-4 text-center font-bold text-secondary-foreground shadow-card transition-all active:scale-[0.98]">
+      <button className="w-full rounded-2xl bg-primary py-4 text-center font-bold text-primary-foreground shadow-card transition-all active:scale-[0.98]">
         Save All Scores
       </button>
     </div>

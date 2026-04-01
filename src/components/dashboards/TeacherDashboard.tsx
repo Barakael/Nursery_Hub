@@ -18,7 +18,7 @@ const TeacherDashboard = () => {
       <div className="grid grid-cols-3 gap-3">
         {[
           { icon: Users, label: "Students", value: "40", color: "bg-primary/10 text-primary" },
-          { icon: BookOpen, label: "Subjects", value: "2", color: "bg-secondary/15 text-secondary" },
+          { icon: BookOpen, label: "Subjects", value: "2", color: "bg-secondary/10 text-secondary" },
           { icon: ClipboardCheck, label: "Pending", value: "2", color: "bg-warning/15 text-warning" },
         ].map((s) => (
           <div key={s.label} className="rounded-2xl bg-card p-4 text-center shadow-soft">
@@ -45,7 +45,7 @@ const TeacherDashboard = () => {
                 <p className="font-semibold text-card-foreground">{c.name}</p>
                 <p className="text-xs text-muted-foreground">{c.subject} • {c.students} students</p>
               </div>
-              <div className="rounded-lg bg-secondary/15 px-3 py-1 text-xs font-bold text-secondary">
+              <div className="rounded-lg bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
                 Enter Scores
               </div>
             </Link>

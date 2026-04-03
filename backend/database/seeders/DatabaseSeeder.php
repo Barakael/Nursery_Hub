@@ -88,11 +88,11 @@ class DatabaseSeeder extends Seeder
         $kg1      = SchoolClass::create(['school_id' => $school->id, 'name' => 'KG 1',      'capacity' => 25]);
 
         // ── Students ──────────────────────────────────────────────────────────
-        $emma = Student::create(['school_id' => $school->id, 'class_id' => $nursery2->id, 'parent_id' => $parent1->id, 'name' => 'Emma Doe',   'dob' => '2021-03-15', 'admission_number' => 'ADM-001']);
-        $liam = Student::create(['school_id' => $school->id, 'class_id' => $nursery2->id, 'parent_id' => $parent2->id, 'name' => 'Liam Smith',  'dob' => '2021-07-20', 'admission_number' => 'ADM-002']);
-        $kachi= Student::create(['school_id' => $school->id, 'class_id' => $nursery1->id, 'parent_id' => $parent2->id, 'name' => 'Kachi Obi',   'dob' => '2022-01-10', 'admission_number' => 'ADM-003']);
-        $zara = Student::create(['school_id' => $school->id, 'class_id' => $nursery2->id, 'parent_id' => null, 'name' => 'Zara Ahmed',  'dob' => '2021-05-03', 'admission_number' => 'ADM-004']);
-        $tunde= Student::create(['school_id' => $school->id, 'class_id' => $nursery1->id, 'parent_id' => null, 'name' => 'Tunde Bello',  'dob' => '2022-09-22', 'admission_number' => 'ADM-005']);
+        $emma = Student::create(['school_id' => $school->id, 'class_id' => $nursery2->id, 'parent_id' => $parent1->id, 'name' => 'Emma Doe',   'dob' => '2021-03-15', 'gender' => 'female', 'admission_number' => 'ADM-001']);
+        $liam = Student::create(['school_id' => $school->id, 'class_id' => $nursery2->id, 'parent_id' => $parent2->id, 'name' => 'Liam Smith',  'dob' => '2021-07-20', 'gender' => 'male',   'admission_number' => 'ADM-002']);
+        $kachi= Student::create(['school_id' => $school->id, 'class_id' => $nursery1->id, 'parent_id' => $parent2->id, 'name' => 'Kachi Obi',   'dob' => '2022-01-10', 'gender' => 'female', 'admission_number' => 'ADM-003']);
+        $zara = Student::create(['school_id' => $school->id, 'class_id' => $nursery2->id, 'parent_id' => null,         'name' => 'Zara Ahmed',  'dob' => '2021-05-03', 'gender' => 'female', 'admission_number' => 'ADM-004']);
+        $tunde= Student::create(['school_id' => $school->id, 'class_id' => $nursery1->id, 'parent_id' => null,         'name' => 'Tunde Bello', 'dob' => '2022-09-22', 'gender' => 'male',   'admission_number' => 'ADM-005']);
 
         // ── Subjects ──────────────────────────────────────────────────────────
         $subjects1 = [];

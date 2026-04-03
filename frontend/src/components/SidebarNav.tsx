@@ -33,11 +33,10 @@ const navItems: Record<UserRole, NavItem[]> = {
   school: [
     { icon: Home, label: "Dashboard", path: "/dashboard" },
     { icon: Users, label: "Students", path: "/students" },
-    { icon: BookOpen, label: "Classes", path: "/classes" },
-    { icon: User, label: "Staff & Parents", path: "/users" },
+  
     { icon: CreditCard, label: "Finance", path: "/payments" },
-    { icon: FileBarChart, label: "Reports", path: "/reports" },
     { icon: Calendar, label: "Timetable", path: "/timetable" },
+    { icon: User, label: "Staffs", path: "/users" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ],
 };

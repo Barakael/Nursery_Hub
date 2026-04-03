@@ -1,4 +1,4 @@
-import { Home, BookOpen, CreditCard, Calendar, User, Users, BarChart3, Settings, FileBarChart } from "lucide-react";
+import { Home, BookOpen, CreditCard, Calendar, User, Users, BarChart3, Settings, FileBarChart, FileClock } from "lucide-react";
 import { useAuth, UserRole } from "@/contexts/AuthContext";
 import { Link, useLocation } from "react-router-dom";
 
@@ -34,7 +34,7 @@ const navItems: Record<UserRole, NavItem[]> = {
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Users, label: "Students", path: "/students" },
     { icon: CreditCard, label: "Finance", path: "/payments" },
-    { icon: FileBarChart, label: "Reports", path: "/reports" },
+    { icon: FileClock, label: "Timetable", path: "/timetable" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ],
 };

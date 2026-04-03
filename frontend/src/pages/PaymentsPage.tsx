@@ -29,6 +29,10 @@ const StaffFinanceView = () => {
   const { data: feeStructures = [] } = useFeeStructures();
   const recordPayment = useRecordPayment();
 
+  const [lookupId, setLookupId] = useState("");
+  const { data: lookupBalance } = useStudentBalance(Number(lookupId) || 0);
+  const { data: lookupPayments = [] } = useStudentPayments(Number(lookupId) || 0);
+
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     student_id: "",
@@ -161,6 +165,75 @@ const StaffFinanceView = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Student Payment Lookup */}
+      <div className="rounded-2xl bg-card p-5 shadow-card">
+        <h3 className="mb-3 font-bold text-card-foreground">Student Payment Lookup</h3>
+        <Select value={lookupId} onValueChange={setLookupId}>
+          <SelectTrigger>
+            <SelectValue placeholder="Search a student…" />
+          </SelectTrigger>
+          <SelectContent>
+            {students.map((s) => (
+              <SelectItem key={s.id} value={String(s.id)}>
+                {s.name}{s.class?.name ? ` — ${s.class.name}` : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {lookupId && lookupBalance && (
+          <div className="mt-4 space-y-3">
+            {/* Balance card */}
+            <div className="rounded-xl bg-primary p-4 text-primary-foreground">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-medium opacity-70">Total Fees</p>
+                  <p className="text-2xl font-extrabold">{fmt(lookupBalance.total ?? 0)}</p>
+                  {lookupBalance.structure && (
+                    <p className="text-xs opacity-60 mt-0.5">{lookupBalance.structure.name}</p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-medium opacity-70">Balance Due</p>
+                  <p className="text-lg font-bold">{fmt(lookupBalance.remaining ?? 0)}</p>
+                </div>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-primary-foreground/20">
+                <div
+                  className="h-full rounded-full bg-primary-foreground transition-all"
+                  style={{ width: `${Math.min(lookupBalance.percent ?? 0, 100)}%` }}
+                />
+              </div>
+              <div className="mt-1.5 flex justify-between text-xs opacity-70">
+                <span>Paid: {fmt(lookupBalance.paid ?? 0)}</span>
+                <span>{lookupBalance.percent ?? 0}%</span>
+              </div>
+            </div>
+
+            {/* Payment history */}
+            {lookupPayments.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Payment History</p>
+                {lookupPayments.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between rounded-xl bg-accent/50 px-4 py-2.5">
+                    <div>
+                      <p className="text-sm font-semibold text-card-foreground">{fmt(p.amount_paid)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {methodLabel[p.method ?? ""] ?? p.method ?? "—"}
+                        {p.reference ? ` · ${p.reference}` : ""}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{p.payment_date}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="py-3 text-center text-sm text-muted-foreground">No payments for this student yet.</p>
+            )}
           </div>
         )}
       </div>

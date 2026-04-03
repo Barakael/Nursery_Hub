@@ -6,10 +6,10 @@ export interface Student {
   name: string;
   admission_number: string;
   class_id: number;
-  class_name?: string;
+  class?: { id: number; name: string } | null;
   parent_id?: number;
-  parent_name?: string;
-  date_of_birth?: string;
+  parent?: { id: number; name: string; phone?: string } | null;
+  dob?: string;
   gender?: string;
   photo?: string;
   school_id: number;
@@ -19,6 +19,7 @@ interface StudentsParams {
   search?: string;
   class_id?: number | string;
   page?: number;
+  per_page?: number;
 }
 
 export const useStudents = (params?: StudentsParams) =>

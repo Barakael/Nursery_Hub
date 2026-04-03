@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useAuth, UserRole } from "@/contexts/AuthContext";
-import { GraduationCap, Eye, EyeOff, LogIn } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { GraduationCap, Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
 
-const demoAccounts: { role: UserRole; email: string; password: string; label: string }[] = [
-  { role: "parent", email: "parent@nurseryhub.demo", password: "demo1234", label: "Parent" },
-  { role: "teacher", email: "teacher@nurseryhub.demo", password: "demo1234", label: "Teacher" },
-  { role: "school", email: "school@nurseryhub.demo", password: "demo1234", label: "School Admin" },
-  { role: "admin", email: "admin@nurseryhub.demo", password: "demo1234", label: "System Admin" },
+const demoAccounts = [
+  { email: "parent@nurseryhub.demo", password: "demo1234", label: "Parent" },
+  { email: "teacher@nurseryhub.demo", password: "demo1234", label: "Teacher" },
+  { email: "school@nurseryhub.demo", password: "demo1234", label: "School Admin" },
+  { email: "admin@nurseryhub.demo", password: "demo1234", label: "System Admin" },
 ];
 
 const LoginPage = () => {
@@ -14,22 +14,31 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const account = demoAccounts.find((a) => a.email === email && a.password === password);
-    if (account) {
-      login(account.role);
+    setError("");
+    setIsLoading(true);
+    try {
+      await login(email, password);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? "Invalid email or password.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const fillDemo = (account: typeof demoAccounts[0]) => {
     setEmail(account.email);
     setPassword(account.password);
+    setError("");
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-primary px-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-primary px-6 py-10">
       <div className="mb-8 text-center">
         <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-primary-foreground/10 shadow-elevated">
           <GraduationCap className="h-10 w-10 text-primary-foreground" />
@@ -43,6 +52,12 @@ const LoginPage = () => {
       {/* Login Form */}
       <div className="w-full max-w-sm">
         <form onSubmit={handleSubmit} className="rounded-2xl bg-card p-6 shadow-elevated space-y-4">
+          {error && (
+            <div className="rounded-xl bg-destructive/10 px-4 py-3 text-sm font-semibold text-destructive">
+              {error}
+            </div>
+          )}
+
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Email</label>
             <input
@@ -50,6 +65,7 @@ const LoginPage = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
+              required
               className="w-full rounded-xl border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
@@ -62,6 +78,7 @@ const LoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
+                required
                 className="w-full rounded-xl border border-input bg-background px-4 py-3 pr-12 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
               <button
@@ -76,11 +93,11 @@ const LoginPage = () => {
 
           <button
             type="submit"
-            disabled={!email || !password}
+            disabled={!email || !password || isLoading}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-bold text-primary-foreground shadow-soft transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <LogIn className="h-5 w-5" />
-            Sign In
+            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5" />}
+            {isLoading ? "Signing In…" : "Sign In"}
           </button>
         </form>
 
@@ -92,7 +109,7 @@ const LoginPage = () => {
           <div className="grid grid-cols-2 gap-2">
             {demoAccounts.map((account) => (
               <button
-                key={account.role}
+                key={account.email}
                 onClick={() => fillDemo(account)}
                 className="rounded-xl bg-primary-foreground/10 px-3 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary-foreground/20 active:scale-[0.97]"
               >

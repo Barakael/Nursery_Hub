@@ -13,7 +13,7 @@ import { Users, GraduationCap, TrendingUp, Wallet, UserCheck, UserX, Clock } fro
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
-const fmt = (n: number) => `₦${n?.toLocaleString() ?? 0}`;
+const fmt = (n: number) => `TSh ${(n ?? 0).toLocaleString()}`;
 
 const StatCard = ({
   icon: Icon, label, value, sub, color = "text-primary",
@@ -272,7 +272,7 @@ const ReportsPage = () => {
                     <XAxis dataKey="subject_name" tick={{ fontSize: 11 }} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Bar dataKey="average" radius={[6, 6, 0, 0]}>
+                    <Bar dataKey="avg_score" name="Average" radius={[6, 6, 0, 0]}>
                       {classReport.subjects.map((_, i) => (
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                       ))}
@@ -312,15 +312,15 @@ const ReportsPage = () => {
               {/* Scores */}
               <div className="rounded-2xl bg-card p-5 shadow-card">
                 <h3 className="mb-3 font-bold text-foreground">
-                  {studentReport.student.name} — {studentReport.student.class_name}
+                  {studentReport.student.name} — {studentReport.student.class}
                 </h3>
-                {studentReport.scores?.length > 0 ? (
+                {studentReport.performance?.scores?.length > 0 ? (
                   <div className="space-y-2">
-                    {studentReport.scores.map((sc, i) => (
+                    {studentReport.performance.scores.map((sc, i) => (
                       <div key={i} className="flex items-center justify-between rounded-xl bg-accent/50 px-4 py-2.5">
                         <span className="text-sm font-medium text-foreground">{sc.subject}</span>
                         <div className="flex items-center gap-3">
-                          <span className="text-sm text-muted-foreground">{sc.score}/{sc.max_score}</span>
+                          <span className="text-sm text-muted-foreground">{sc.score}/{sc.max}</span>
                           <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
                             sc.grade === "A+" || sc.grade === "A" ? "bg-success/15 text-success" :
                             sc.grade === "B+" || sc.grade === "B" ? "bg-blue-100 text-blue-700" :
@@ -337,19 +337,19 @@ const ReportsPage = () => {
               </div>
 
               {/* Balance */}
-              {studentReport.balance && (
+              {studentReport.payments && (
                 <div className="rounded-2xl bg-primary p-5 text-primary-foreground shadow-card">
                   <p className="text-sm font-medium opacity-80">Fee Balance</p>
-                  <p className="text-3xl font-extrabold">{fmt(studentReport.balance.remaining)}</p>
+                  <p className="text-3xl font-extrabold">{fmt(studentReport.payments.remaining)}</p>
                   <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-primary-foreground/20">
                     <div
                       className="h-full rounded-full bg-primary-foreground"
-                      style={{ width: `${studentReport.balance.percent_paid ?? 0}%` }}
+                      style={{ width: `${studentReport.payments.percent ?? 0}%` }}
                     />
                   </div>
                   <div className="mt-2 flex justify-between text-xs opacity-80">
-                    <span>Paid: {fmt(studentReport.balance.total_paid)}</span>
-                    <span>{studentReport.balance.percent_paid ?? 0}% paid</span>
+                    <span>Paid: {fmt(studentReport.payments.paid)}</span>
+                    <span>{studentReport.payments.percent ?? 0}% paid</span>
                   </div>
                 </div>
               )}

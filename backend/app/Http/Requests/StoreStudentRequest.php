@@ -15,6 +15,7 @@ class StoreStudentRequest extends FormRequest
             'class_id'         => ['required', 'exists:classes,id'],
             'parent_id'        => ['nullable', 'exists:users,id'],
             'dob'              => ['nullable', 'date'],
+            'gender'           => ['nullable', 'in:male,female'],
             'admission_number' => ['nullable', 'string', 'max:50'],
             'status'           => ['in:active,inactive'],
         ];

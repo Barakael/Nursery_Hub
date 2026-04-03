@@ -36,30 +36,34 @@ export interface OverviewReport {
 export interface ClassPerformanceReport {
   class_id: number;
   class_name: string;
+  overall_avg: number | null;
   subjects: Array<{
     subject_id: number;
     subject_name: string;
-    average: number;
+    avg_score: number | null;
     count: number;
   }>;
 }
 
 export interface StudentReport {
-  student: { id: number; name: string; class_name: string };
-  scores: Array<{
-    subject: string;
-    score: number;
-    max_score: number;
-    percentage: number;
-    grade: string;
-    term: string;
-    year: number;
-  }>;
-  balance: {
-    total_fees: number;
-    total_paid: number;
+  student: { id: number; name: string; class: string };
+  performance: {
+    avg_percent: number | null;
+    subject_count: number;
+    scores: Array<{
+      subject: string;
+      score: number;
+      max: number;
+      grade: string;
+      percent: number;
+    }>;
+  };
+  payments: {
+    total: number;
+    paid: number;
     remaining: number;
-    percent_paid: number;
+    percent: number;
+    structure?: { id: number; name: string; term: string } | null;
   };
 }
 

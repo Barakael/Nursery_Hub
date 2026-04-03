@@ -16,13 +16,13 @@ const AppShell = ({ children }: { children: ReactNode }) => {
 
       {/* Mobile header */}
       {user && (
-        <header className="sticky top-0 z-40 bg-primary px-4 py-3 md:hidden">
+        <header className="sticky top-0 z-40 bg-primary px-4 py-2 md:hidden">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-primary-foreground/70">
                 {user.role === "parent" ? "👋 Welcome back," : "Hello,"}
               </p>
-              <h1 className="text-lg font-bold text-primary-foreground">{user.name}</h1>
+              <h1 className="text-base font-bold text-primary-foreground">{user.name}</h1>
             </div>
             <button
               onClick={logout}
@@ -36,7 +36,7 @@ const AppShell = ({ children }: { children: ReactNode }) => {
 
       {/* Desktop header — offset by sidebar width */}
       {user && (
-        <header className="hidden md:flex md:ml-64 sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm px-8 py-4 items-center justify-between">
+        <header className="hidden md:flex md:ml-64 sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm px-8 py-2 items-center justify-between">
           <div>
             <p className="text-sm text-muted-foreground">
               {user.role === "parent" ? "👋 Welcome back," : "Hello,"}

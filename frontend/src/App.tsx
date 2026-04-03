@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppShell from "@/components/AppShell";
 import LoginPage from "@/pages/LoginPage";
-import Dashboard from "@/pages/Dashboard";
+import ReportsPage from "@/pages/ReportsPage";
 import PerformancePage from "@/pages/PerformancePage";
 import PaymentsPage from "@/pages/PaymentsPage";
 import TimetablePage from "@/pages/TimetablePage";
@@ -15,7 +15,6 @@ import ProfilePage from "@/pages/ProfilePage";
 import StudentsPage from "@/pages/StudentsPage";
 import ClassesPage from "@/pages/ClassesPage";
 import UsersPage from "@/pages/UsersPage";
-import ReportsPage from "@/pages/ReportsPage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
 
@@ -48,7 +47,7 @@ const LoginRoute = () => {
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<LoginRoute />} />
-    <Route path="/dashboard"   element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+    <Route path="/dashboard"   element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
     <Route path="/performance" element={<ProtectedRoute><PerformancePage /></ProtectedRoute>} />
     <Route path="/payments"    element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
     <Route path="/timetable"   element={<ProtectedRoute><TimetablePage /></ProtectedRoute>} />

@@ -23,6 +23,7 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/me',     [AuthController::class, 'me']);
+        Route::put('/auth/me',     [AuthController::class, 'updateMe']);
 
         // Schools (admin only)
         Route::apiResource('schools', SchoolController::class)

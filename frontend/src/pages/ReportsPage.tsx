@@ -1,17 +1,27 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend,
 } from "recharts";
-import { useOverviewReport, useClassReport, useStudentReport } from "@/hooks/useReports";
+import { useOverviewReport, useClassReport } from "@/hooks/useReports";
 import { useClasses } from "@/hooks/useClasses";
-import { useStudents } from "@/hooks/useStudents";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Users, GraduationCap, TrendingUp, Wallet, UserCheck, UserX, Clock } from "lucide-react";
+import { Users, GraduationCap, TrendingUp, Wallet, Download, FileSpreadsheet, FileText, X } from "lucide-react";
 
-const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+const COLORS = [
+  "#020884ef", // blue
+  "#efc83a", // yellow
+  "#15803d", // dark green
+  "#f97316", // orange
+  "#8b5cf6", // purple
+  "#ec4899", // pink
+  "#06b6d4", // cyan
+  "#84cc16", // lime
+  "#ef4444", // red
+  "#a16207", // amber-dark
+];
 
 const fmt = (n: number) => `TSh ${(n ?? 0).toLocaleString()}`;
 
@@ -24,30 +34,46 @@ const StatCard = ({
   sub?: string;
   color?: string;
 }) => (
-  <div className="rounded-2xl bg-card p-5 shadow-card">
-    <div className="flex items-start justify-between">
-      <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10`}>
+  <div className="rounded-xl md:rounded-2xl bg-card p-3 md:p-4 shadow-card">
+    <div className="hidden md:flex items-start justify-between">
+      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
         <Icon className={`h-6 w-6 ${color}`} />
       </div>
     </div>
-    <p className="mt-3 text-2xl font-extrabold text-foreground">{value}</p>
-    <p className="text-sm font-medium text-muted-foreground">{label}</p>
-    {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+    <p className="mt-0 md:mt-3 text-xl md:text-2xl font-extrabold text-foreground leading-tight">{value}</p>
+    <p className="text-xs md:text-sm font-medium text-muted-foreground leading-tight">{label}</p>
+    {sub && <p className="mt-0.5 text-[10px] md:text-xs text-muted-foreground">{sub}</p>}
   </div>
 );
 
 const ReportsPage = () => {
-  const [view, setView] = useState<"overview" | "class" | "student">("overview");
+  const [view, setView] = useState<"overview" | "class" | "payments">("overview");
   const [classId, setClassId] = useState("");
-  const [studentId, setStudentId] = useState("");
+  const [showDownload, setShowDownload] = useState(false);
 
   const { data: overview, isLoading: loadingOverview } = useOverviewReport();
   const { data: classes = [] } = useClasses();
-  const { data: studentsData } = useStudents();
-  const students = studentsData?.data ?? [];
 
   const { data: classReport, isLoading: loadingClass } = useClassReport(Number(classId));
-  const { data: studentReport, isLoading: loadingStudent } = useStudentReport(Number(studentId));
+
+  // Build per-class payment summary from overview.students
+  const classSummary = useMemo(() => {
+    if (!overview?.students?.length) return [];
+    const map: Record<string, {
+      class_name: string; count: number;
+      total: number; paid: number; remaining: number;
+      paid_full: number; partial: number; unpaid: number;
+    }> = {};
+    overview.students.forEach((s) => {
+      if (!map[s.class_name]) map[s.class_name] = { class_name: s.class_name, count: 0, total: 0, paid: 0, remaining: 0, paid_full: 0, partial: 0, unpaid: 0 };
+      const m = map[s.class_name];
+      m.count++; m.total += s.total_fees; m.paid += s.total_paid; m.remaining += s.remaining;
+      if (s.total_paid >= s.total_fees - 0.01) m.paid_full++;
+      else if (s.total_paid <= 0) m.unpaid++;
+      else m.partial++;
+    });
+    return Object.values(map).sort((a, b) => a.class_name.localeCompare(b.class_name));
+  }, [overview?.students]);
 
   const pieData = overview
     ? [
@@ -56,13 +82,50 @@ const ReportsPage = () => {
       ]
     : [];
 
+  const downloadCSV = () => {
+    if (!overview?.students?.length) return;
+    const header = ["Name", "Class", "Total Fees (TSh)", "Paid (TSh)", "Pending (TSh)"];
+    const rows = overview.students.map((s) => [
+      `"${s.name}"`, `"${s.class_name}"`, s.total_fees, s.total_paid, s.remaining,
+    ]);
+    const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
+    const a = Object.assign(document.createElement("a"), {
+      href: URL.createObjectURL(new Blob([csv], { type: "text/csv" })),
+      download: "student-payments.csv",
+    });
+    a.click();
+    setShowDownload(false);
+  };
+
+  const downloadPDF = () => {
+    if (!overview?.students?.length) return;
+    const rows = overview.students
+      .map((s) => `<tr><td>${s.name}</td><td>${s.class_name}</td><td>TSh ${s.total_fees.toLocaleString()}</td><td>TSh ${s.total_paid.toLocaleString()}</td><td>TSh ${s.remaining.toLocaleString()}</td></tr>`)
+      .join("");
+    const html = `<html><head><title>Student Payments</title><style>
+      body{font-family:sans-serif;padding:24px}h1{font-size:16px;margin-bottom:12px}
+      table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:7px 10px;font-size:12px;text-align:left}
+      th{background:#f0f0f0;font-weight:600}tr:nth-child(even){background:#fafafa}
+    </style></head><body>
+      <h1>Student Payment Report</h1>
+      <table><thead><tr><th>Name</th><th>Class</th><th>Total Fees</th><th>Paid</th><th>Pending</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+    </body></html>`;
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.print();
+    setShowDownload(false);
+  };
+
   return (
     <div className="animate-fade-in space-y-6">
       {/* View Switcher */}
       <div>
         <h1 className="text-xl font-bold text-foreground">Reports</h1>
         <div className="mt-3 flex gap-1 rounded-2xl bg-card p-1.5 shadow-soft">
-          {(["overview", "class", "student"] as const).map((v) => (
+          {(["overview", "class", "payments"] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
@@ -72,7 +135,7 @@ const ReportsPage = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {v}
+              {v === "payments" ? "Payments" : v}
             </button>
           ))}
         </div>
@@ -89,121 +152,40 @@ const ReportsPage = () => {
             <>
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <StatCard icon={Users} label="Total Students" value={overview.total_students} />
-                <StatCard icon={GraduationCap} label="Classes" value={overview.total_classes} />
-                <StatCard icon={TrendingUp} label="Teachers" value={overview.total_teachers} />
                 <StatCard icon={Wallet} label="Collection" value={`${overview.collection_percent ?? 0}%`} sub={fmt(overview.total_collected)} color="text-success" />
+                <div className="hidden lg:block">
+                  <StatCard icon={GraduationCap} label="Classes" value={overview.total_classes} />
+                </div>
+                <div className="hidden lg:block">
+                  <StatCard icon={TrendingUp} label="Teachers" value={overview.total_teachers} />
+                </div>
               </div>
 
-              {/* Fee Collection Pie */}
-              {overview.total_fees > 0 && (
-                <div className="rounded-2xl bg-card p-5 shadow-card">
-                  <h3 className="mb-4 font-bold text-foreground">Fee Collection</h3>
-                  <div className="flex flex-col items-center gap-2 md:flex-row">
-                    <ResponsiveContainer width="100%" height={200}>
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={55}
-                          outerRadius={85}
-                          dataKey="value"
-                          paddingAngle={3}
-                        >
-                          {pieData.map((_, i) => (
-                            <Cell key={i} fill={i === 0 ? "#10b981" : "#ef4444"} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(v: number) => fmt(v)} />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="space-y-2 md:w-56">
-                      <div className="rounded-xl bg-success/10 p-3">
-                        <p className="text-xs text-muted-foreground">Collected</p>
-                        <p className="text-lg font-bold text-success">{fmt(overview.total_collected)}</p>
-                      </div>
-                      <div className="rounded-xl bg-destructive/10 p-3">
-                        <p className="text-xs text-muted-foreground">Pending</p>
-                        <p className="text-lg font-bold text-destructive">{fmt(overview.total_fees - overview.total_collected)}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* ── Enrollment by Class + Fee Collection (side by side) ── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-              {/* Per-student */}
-              {overview.students?.length > 0 && (
-                <div className="rounded-2xl bg-card p-5 shadow-card">
-                  <h3 className="mb-4 font-bold text-foreground">Student Fee Status</h3>
-                  <div className="space-y-3">
-                    {overview.students.map((s) => {
-                      const pct = s.total_fees > 0 ? Math.round((s.total_paid / s.total_fees) * 100) : 0;
-                      return (
-                        <div key={s.id}>
-                          <div className="flex justify-between text-sm">
-                            <span className="font-medium text-foreground">{s.name}</span>
-                            <span className="text-muted-foreground">{pct}%</span>
-                          </div>
-                          <div className="mt-1 h-2 overflow-hidden rounded-full bg-accent">
-                            <div
-                              className={`h-full rounded-full transition-all ${pct >= 100 ? "bg-success" : pct >= 60 ? "bg-warning" : "bg-destructive"}`}
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {fmt(s.total_paid)} of {fmt(s.total_fees)} · {s.class_name}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* ── Payment Status Breakdown ── */}
-              {(overview.paid_full + overview.paid_partial + overview.unpaid) > 0 && (
-                <div className="rounded-2xl bg-card p-5 shadow-card">
-                  <h3 className="mb-4 font-bold text-foreground">Payment Status Breakdown</h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="rounded-xl bg-success/10 p-4 text-center">
-                      <UserCheck className="mx-auto mb-1 h-6 w-6 text-success" />
-                      <p className="text-2xl font-extrabold text-success">{overview.paid_full}</p>
-                      <p className="text-xs font-medium text-muted-foreground">Fully Paid</p>
-                    </div>
-                    <div className="rounded-xl bg-warning/10 p-4 text-center">
-                      <Clock className="mx-auto mb-1 h-6 w-6 text-warning" />
-                      <p className="text-2xl font-extrabold text-warning">{overview.paid_partial}</p>
-                      <p className="text-xs font-medium text-muted-foreground">Part Paid</p>
-                    </div>
-                    <div className="rounded-xl bg-destructive/10 p-4 text-center">
-                      <UserX className="mx-auto mb-1 h-6 w-6 text-destructive" />
-                      <p className="text-2xl font-extrabold text-destructive">{overview.unpaid}</p>
-                      <p className="text-xs font-medium text-muted-foreground">Not Paid</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Enrollment by Class ── */}
+              {/* Enrolled Students by Class */}
               {(overview.enrollment_by_class?.length ?? 0) > 0 && (
                 <div className="rounded-2xl bg-card p-5 shadow-card">
                   <h3 className="mb-4 font-bold text-foreground">Enrolled Students by Class</h3>
+                  <div className="mx-auto max-w-xs">
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart
                       data={overview.enrollment_by_class}
-                      margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
+                      margin={{ top: 0, right: 8, left: -20, bottom: 0 }}
+                      barCategoryGap="30%"
                     >
                       <XAxis dataKey="class_name" tick={{ fontSize: 11 }} />
                       <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                       <Tooltip />
-                      <Bar dataKey="student_count" name="Students" radius={[6, 6, 0, 0]}>
+                      <Bar dataKey="student_count" name="Students" radius={[6, 6, 0, 0]} maxBarSize={40}>
                         {overview.enrollment_by_class.map((_, i) => (
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
+                  </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {overview.enrollment_by_class.map((c, i) => (
                       <span
@@ -218,26 +200,49 @@ const ReportsPage = () => {
                 </div>
               )}
 
-              {/* ── Recent Admissions ── */}
-              {(overview.recent_admissions?.length ?? 0) > 0 && (
+              {/* Fee Collection */}
+              {overview.total_fees > 0 && (
                 <div className="rounded-2xl bg-card p-5 shadow-card">
-                  <h3 className="mb-4 font-bold text-foreground">Recent Admissions</h3>
-                  <div className="space-y-2">
-                    {overview.recent_admissions.map((s) => (
-                      <div
-                        key={s.id}
-                        className="flex items-center justify-between rounded-xl bg-accent/50 px-4 py-3"
+                  <h3 className="mb-4 font-bold text-foreground">Fee Collection</h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={85}
+                        dataKey="value"
+                        paddingAngle={3}
                       >
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">{s.name}</p>
-                          <p className="text-xs text-muted-foreground">{s.class_name} · {s.admission_number}</p>
-                        </div>
-                        <span className="text-xs font-medium text-muted-foreground">{s.enrolled_at}</span>
-                      </div>
-                    ))}
+                        {pieData.map((_, i) => (
+                          <Cell key={i} fill={i === 0 ? "#15803d" : "#eab308"} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(v: number) => fmt(v)} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="rounded-xl p-3" style={{ backgroundColor: "#15803d1a" }}>
+                      <p className="text-xs text-muted-foreground">Collected</p>
+                      <p className="text-lg font-bold" style={{ color: "#15803d" }}>{fmt(overview.total_collected)}</p>
+                    </div>
+                    <div className="rounded-xl p-3" style={{ backgroundColor: "#eab3081a" }}>
+                      <p className="text-xs text-muted-foreground">Pending</p>
+                      <p className="text-lg font-bold" style={{ color: "#ca8a04" }}>{fmt(overview.total_fees - overview.total_collected)}</p>
+                    </div>
                   </div>
                 </div>
               )}
+
+              </div>
+
+              {/* Per-student
+              {overview.students?.length > 0 && ()} */}
+
+              {/* ── Payment Status Breakdown ── (commented) */}
+
             </>
           ) : null}
         </>
@@ -267,18 +272,20 @@ const ReportsPage = () => {
             <div className="rounded-2xl bg-card p-5 shadow-card">
               <h3 className="mb-4 font-bold text-foreground">{classReport.class_name} — Subject Averages</h3>
               {classReport.subjects?.length > 0 ? (
+                <div className="mx-auto max-w-sm">
                 <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={classReport.subjects} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <BarChart data={classReport.subjects} margin={{ top: 0, right: 8, left: -20, bottom: 0 }} barCategoryGap="30%">
                     <XAxis dataKey="subject_name" tick={{ fontSize: 11 }} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Bar dataKey="avg_score" name="Average" radius={[6, 6, 0, 0]}>
+                    <Bar dataKey="avg_score" name="Average" radius={[6, 6, 0, 0]} maxBarSize={40}>
                       {classReport.subjects.map((_, i) => (
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                       ))}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
+                </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">No scores recorded yet.</p>
               )}
@@ -287,76 +294,96 @@ const ReportsPage = () => {
         </>
       )}
 
-      {/* ── STUDENT REPORT ── */}
-      {view === "student" && (
+      {/* ── PAYMENTS TAB — Class payment summaries ── */}
+      {view === "payments" && (
         <>
-          <Select value={studentId} onValueChange={setStudentId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a student…" />
-            </SelectTrigger>
-            <SelectContent>
-              {students.map((s) => (
-                <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {loadingStudent && (
-            <div className="flex justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          {!overview?.students?.length ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-muted-foreground">
+              <Wallet className="h-12 w-12 opacity-30" />
+              <p>No fee data available yet.</p>
             </div>
-          )}
-
-          {studentReport && !loadingStudent && (
+          ) : (
             <div className="space-y-4">
-              {/* Scores */}
-              <div className="rounded-2xl bg-card p-5 shadow-card">
-                <h3 className="mb-3 font-bold text-foreground">
-                  {studentReport.student.name} — {studentReport.student.class}
-                </h3>
-                {studentReport.performance?.scores?.length > 0 ? (
-                  <div className="space-y-2">
-                    {studentReport.performance.scores.map((sc, i) => (
-                      <div key={i} className="flex items-center justify-between rounded-xl bg-accent/50 px-4 py-2.5">
-                        <span className="text-sm font-medium text-foreground">{sc.subject}</span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm text-muted-foreground">{sc.score}/{sc.max}</span>
-                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                            sc.grade === "A+" || sc.grade === "A" ? "bg-success/15 text-success" :
-                            sc.grade === "B+" || sc.grade === "B" ? "bg-blue-100 text-blue-700" :
-                            sc.grade === "C" ? "bg-yellow-100 text-yellow-700" :
-                            "bg-destructive/15 text-destructive"
-                          }`}>{sc.grade}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-6">No scores recorded.</p>
-                )}
-              </div>
+              <p className="text-sm text-muted-foreground">{classSummary.length} class{classSummary.length !== 1 ? "es" : ""} · {overview.students.length} students total</p>
+              {classSummary.map((c) => {
+                const pct = c.total > 0 ? Math.round((c.paid / c.total) * 100) : 0;
+                return (
+                  <div key={c.class_name} className="rounded-2xl bg-card p-5 shadow-card">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-bold text-foreground">{c.class_name}</h3>
+                      <span className="text-xs text-muted-foreground">{c.count} student{c.count !== 1 ? "s" : ""}</span>
+                    </div>
 
-              {/* Balance */}
-              {studentReport.payments && (
-                <div className="rounded-2xl bg-primary p-5 text-primary-foreground shadow-card">
-                  <p className="text-sm font-medium opacity-80">Fee Balance</p>
-                  <p className="text-3xl font-extrabold">{fmt(studentReport.payments.remaining)}</p>
-                  <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-primary-foreground/20">
-                    <div
-                      className="h-full rounded-full bg-primary-foreground"
-                      style={{ width: `${studentReport.payments.percent ?? 0}%` }}
-                    />
+                    {/* Progress bar */}
+                    <div className="h-2.5 overflow-hidden rounded-full bg-accent mb-1">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: "#15803d" }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground mb-3">
+                      <span>{pct}% collected</span>
+                      <span>{fmt(c.paid)} / {fmt(c.total)}</span>
+                    </div>
+
+                    {/* Status breakdown */}
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="rounded-xl bg-[#15803d]/10 py-2">
+                        <p className="text-base font-extrabold text-[#15803d]">{c.paid_full}</p>
+                        <p className="text-[10px] text-muted-foreground font-medium">Paid</p>
+                      </div>
+                      <div className="rounded-xl bg-yellow-50 py-2">
+                        <p className="text-base font-extrabold text-yellow-600">{c.partial}</p>
+                        <p className="text-[10px] text-muted-foreground font-medium">Partial</p>
+                      </div>
+                      <div className="rounded-xl bg-destructive/10 py-2">
+                        <p className="text-base font-extrabold text-destructive">{c.unpaid}</p>
+                        <p className="text-[10px] text-muted-foreground font-medium">Unpaid</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex justify-between text-sm">
+                      <span className="text-muted-foreground">Pending</span>
+                      <span className="font-semibold text-destructive">{fmt(c.remaining)}</span>
+                    </div>
                   </div>
-                  <div className="mt-2 flex justify-between text-xs opacity-80">
-                    <span>Paid: {fmt(studentReport.payments.paid)}</span>
-                    <span>{studentReport.payments.percent ?? 0}% paid</span>
-                  </div>
-                </div>
-              )}
+                );
+              })}
             </div>
           )}
         </>
       )}
+
+      {/* ── Floating Download FAB ── */}
+      {overview?.students?.length ? (
+        <div className="fixed bottom-24 right-4 z-50 md:bottom-8 md:right-8 flex flex-col items-end gap-2">
+          {showDownload && (
+            <div className="flex flex-col gap-2 mb-1">
+              <button
+                onClick={downloadCSV}
+                className="flex items-center gap-2 rounded-2xl bg-card border border-border px-4 py-2.5 text-sm font-semibold shadow-lg hover:bg-accent transition-colors"
+              >
+                <FileSpreadsheet className="h-4 w-4 text-[#15803d]" />
+                Excel (.csv)
+              </button>
+              <button
+                onClick={downloadPDF}
+                className="flex items-center gap-2 rounded-2xl bg-card border border-border px-4 py-2.5 text-sm font-semibold shadow-lg hover:bg-accent transition-colors"
+              >
+                <FileText className="h-4 w-4 text-[#020884ef]" />
+                PDF (print)
+              </button>
+            </div>
+          )}
+          <button
+            onClick={() => setShowDownload((v) => !v)}
+            className="flex h-13 w-13 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition-opacity p-3.5"
+            title="Download student payments"
+          >
+            {showDownload ? <X className="h-5 w-5" /> : <Download className="h-5 w-5" />}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 };

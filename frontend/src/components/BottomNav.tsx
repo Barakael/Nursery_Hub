@@ -1,4 +1,4 @@
-import { Home, BookOpen, CreditCard, Calendar, User, Users, BarChart3, Settings } from "lucide-react";
+import { Home, BookOpen, CreditCard, Calendar, User, Users, BarChart3, Settings, FileBarChart } from "lucide-react";
 import { useAuth, UserRole } from "@/contexts/AuthContext";
 import { Link, useLocation } from "react-router-dom";
 
@@ -33,8 +33,8 @@ const navItems: Record<UserRole, NavItem[]> = {
   school: [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Users, label: "Students", path: "/students" },
-    { icon: BookOpen, label: "Classes", path: "/classes" },
-    { icon: Calendar, label: "Timetable", path: "/timetable" },
+    { icon: CreditCard, label: "Finance", path: "/payments" },
+    { icon: FileBarChart, label: "Reports", path: "/reports" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ],
 };
@@ -45,7 +45,7 @@ const BottomNav = () => {
 
   if (!user) return null;
 
-  const items = navItems[user.role];
+  const items = navItems[user.role] ?? navItems.admin;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card safe-bottom">

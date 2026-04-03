@@ -1,4 +1,4 @@
-import { Home, BookOpen, CreditCard, Calendar, User, Users, BarChart3, Settings, GraduationCap } from "lucide-react";
+import { Home, BookOpen, CreditCard, Calendar, User, Users, BarChart3, Settings, GraduationCap, FileBarChart } from "lucide-react";
 import { useAuth, UserRole } from "@/contexts/AuthContext";
 import { Link, useLocation } from "react-router-dom";
 
@@ -34,6 +34,9 @@ const navItems: Record<UserRole, NavItem[]> = {
     { icon: Home, label: "Dashboard", path: "/dashboard" },
     { icon: Users, label: "Students", path: "/students" },
     { icon: BookOpen, label: "Classes", path: "/classes" },
+    { icon: User, label: "Staff & Parents", path: "/users" },
+    { icon: CreditCard, label: "Finance", path: "/payments" },
+    { icon: FileBarChart, label: "Reports", path: "/reports" },
     { icon: Calendar, label: "Timetable", path: "/timetable" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ],
@@ -45,7 +48,7 @@ const SidebarNav = () => {
 
   if (!user) return null;
 
-  const items = navItems[user.role];
+  const items = navItems[user.role] ?? navItems.admin;
 
   return (
     <div className="flex h-full flex-col bg-sidebar border-r border-sidebar-border">

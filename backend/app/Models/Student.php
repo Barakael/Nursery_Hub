@@ -15,6 +15,7 @@ class Student extends Model
         'parent_id',
         'name',
         'dob',
+        'gender',
         'photo',
         'admission_number',
         'status',

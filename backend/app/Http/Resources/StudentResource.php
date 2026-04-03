@@ -13,6 +13,7 @@ class StudentResource extends JsonResource
             'id'               => $this->id,
             'name'             => $this->name,
             'dob'              => $this->dob?->toDateString(),
+            'gender'           => $this->gender,
             'photo'            => $this->photo,
             'admission_number' => $this->admission_number,
             'status'           => $this->status,

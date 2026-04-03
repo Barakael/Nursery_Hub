@@ -1,24 +1,32 @@
 import { useState } from "react";
 import { BookOpen, Utensils } from "lucide-react";
+import { useTimetable, TimetableSlot } from "@/hooks/useTimetable";
 
-const subjectTimetable = [
-  { day: "Monday", subjects: ["Mathematics", "English", "Science", "Creative Arts"] },
-  { day: "Tuesday", subjects: ["English", "Social Studies", "Mathematics", "P.E."] },
-  { day: "Wednesday", subjects: ["Science", "Creative Arts", "English", "Mathematics"] },
-  { day: "Thursday", subjects: ["Social Studies", "Mathematics", "P.E.", "Science"] },
-  { day: "Friday", subjects: ["English", "Creative Arts", "Social Studies", "Free Play"] },
-];
-
-const mealTimetable = [
-  { day: "Monday", breakfast: "Oat Porridge", lunch: "Jollof Rice & Chicken", snack: "Fruit Salad" },
-  { day: "Tuesday", breakfast: "Bread & Eggs", lunch: "Fried Rice & Fish", snack: "Biscuits" },
-  { day: "Wednesday", breakfast: "Cereal & Milk", lunch: "Yam & Egg Sauce", snack: "Banana" },
-  { day: "Thursday", breakfast: "Pancakes", lunch: "Beans & Plantain", snack: "Cookies" },
-  { day: "Friday", breakfast: "Toast & Tea", lunch: "Spaghetti & Meatballs", snack: "Yoghurt" },
-];
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
 const TimetablePage = () => {
   const [tab, setTab] = useState<"subjects" | "meals">("subjects");
+  const { data: slots = [], isLoading } = useTimetable();
+
+  // Group by day
+  const byDay = (type: "lesson" | "meal" | "break" | "activity") =>
+    DAYS.map((day) => ({
+      day,
+      slots: slots.filter((s) =>
+        s.day.toLowerCase() === day.toLowerCase() &&
+        (type === "lesson" ? s.type === "lesson" : s.type === "meal" || s.type === "break")
+      ),
+    })).filter((d) => d.slots.length > 0);
+
+  const lessonDays = byDay("lesson");
+  const mealDays = byDay("meal");
+
+  // Fallback: show all slots grouped by day and type
+  const allByDay = DAYS.map((day) => ({
+    day,
+    lessons: slots.filter((s) => s.day.toLowerCase() === day.toLowerCase() && s.type === "lesson"),
+    meals: slots.filter((s) => s.day.toLowerCase() === day.toLowerCase() && (s.type === "meal" || s.type === "break")),
+  })).filter((d) => d.lessons.length > 0 || d.meals.length > 0);
 
   return (
     <div className="animate-fade-in space-y-4">
@@ -43,48 +51,72 @@ const TimetablePage = () => {
         ))}
       </div>
 
-      {/* Subject Timetable */}
-      {tab === "subjects" && (
-        <div className="space-y-3">
-          {subjectTimetable.map((day) => (
-            <div key={day.day} className="rounded-2xl bg-card p-4 shadow-soft">
-              <p className="mb-2 text-sm font-bold text-primary">{day.day}</p>
-              <div className="flex flex-wrap gap-2">
-                {day.subjects.map((s, i) => (
-                  <span
-                    key={i}
-                    className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-accent-foreground"
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
+      {isLoading ? (
+        <div className="flex justify-center py-16">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
-      )}
-
-      {/* Meal Timetable */}
-      {tab === "meals" && (
-        <div className="space-y-3">
-          {mealTimetable.map((day) => (
-            <div key={day.day} className="rounded-2xl bg-card p-4 shadow-soft">
-              <p className="mb-3 text-sm font-bold text-primary">{day.day}</p>
-              <div className="space-y-2 text-sm">
-                {[
-                  { label: "🌅 Breakfast", value: day.breakfast },
-                  { label: "🍽️ Lunch", value: day.lunch },
-                  { label: "🍪 Snack", value: day.snack },
-                ].map((meal) => (
-                  <div key={meal.label} className="flex items-center justify-between">
-                    <span className="text-muted-foreground">{meal.label}</span>
-                    <span className="font-semibold text-card-foreground">{meal.value}</span>
+      ) : slots.length === 0 ? (
+        <div className="rounded-2xl bg-card p-8 text-center text-muted-foreground shadow-soft">
+          <BookOpen className="mx-auto mb-2 h-8 w-8 opacity-30" />
+          <p>No timetable set up yet.</p>
+        </div>
+      ) : (
+        <>
+          {/* Subject Timetable */}
+          {tab === "subjects" && (
+            <div className="space-y-3">
+              {allByDay.map(({ day, lessons }) =>
+                lessons.length > 0 ? (
+                  <div key={day} className="rounded-2xl bg-card p-4 shadow-soft">
+                    <p className="mb-2 text-sm font-bold text-primary">{day}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {lessons.map((s) => (
+                        <span
+                          key={s.id}
+                          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-accent-foreground"
+                          title={`${s.start_time} – ${s.end_time}${s.teacher_name ? " · " + s.teacher_name : ""}`}
+                        >
+                          {s.subject ?? s.type}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
+                ) : null
+              )}
             </div>
-          ))}
-        </div>
+          )}
+
+          {/* Meal Timetable */}
+          {tab === "meals" && (
+            <div className="space-y-3">
+              {allByDay.map(({ day, meals }) =>
+                meals.length > 0 ? (
+                  <div key={day} className="rounded-2xl bg-card p-4 shadow-soft">
+                    <p className="mb-3 text-sm font-bold text-primary">{day}</p>
+                    <div className="space-y-2 text-sm">
+                      {meals.map((m) => (
+                        <div key={m.id} className="flex items-center justify-between">
+                          <span className="text-muted-foreground capitalize">
+                            {m.type === "meal" ? "🍽️ Meal" : "☕ Break"} {m.start_time}
+                          </span>
+                          <span className="font-semibold text-card-foreground">
+                            {m.subject ?? m.type}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null
+              )}
+              {allByDay.every((d) => d.meals.length === 0) && (
+                <div className="rounded-2xl bg-card p-8 text-center text-muted-foreground shadow-soft">
+                  <Utensils className="mx-auto mb-2 h-8 w-8 opacity-30" />
+                  <p>No meal schedule found.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

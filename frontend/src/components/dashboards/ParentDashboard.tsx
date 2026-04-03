@@ -26,10 +26,10 @@ const ParentDashboard = () => {
     ? Math.round(scores.reduce((s, x) => s + (x.score / x.max_score) * 100, 0) / scores.length)
     : null;
 
-  const totalPaid = balance?.total_paid ?? 0;
-  const totalFee = balance?.total_fees ?? 0;
+  const totalPaid = balance?.paid ?? 0;
+  const totalFee = balance?.total ?? 0;
   const remaining = balance?.remaining ?? 0;
-  const pct = balance?.percent_paid ?? 0;
+  const pct = balance?.percent ?? 0;
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -87,14 +87,14 @@ const ParentDashboard = () => {
           </div>
           <div className="mb-3 flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Total Fees</span>
-            <span className="font-bold text-card-foreground">₦{totalFee.toLocaleString()}</span>
+            <span className="font-bold text-card-foreground">TSh {totalFee.toLocaleString()}</span>
           </div>
           <div className="mb-2 h-3 overflow-hidden rounded-full bg-muted">
             <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
           </div>
           <div className="flex justify-between text-xs">
-            <span className="font-semibold text-success">Paid: ₦{totalPaid.toLocaleString()}</span>
-            <span className="font-semibold text-destructive">Balance: ₦{remaining.toLocaleString()}</span>
+            <span className="font-semibold text-success">Paid: TSh {totalPaid.toLocaleString()}</span>
+            <span className="font-semibold text-destructive">Balance: TSh {remaining.toLocaleString()}</span>
           </div>
         </div>
       )}

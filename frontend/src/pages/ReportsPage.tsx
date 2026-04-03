@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend,
@@ -8,7 +8,7 @@ import { useClasses } from "@/hooks/useClasses";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Users, GraduationCap, TrendingUp, Wallet, Download, FileSpreadsheet, FileText, X } from "lucide-react";
+import { Users, GraduationCap, TrendingUp, Wallet } from "lucide-react";
 
 const COLORS = [
   "#020884ef", // blue
@@ -47,33 +47,13 @@ const StatCard = ({
 );
 
 const ReportsPage = () => {
-  const [view, setView] = useState<"overview" | "class" | "payments">("overview");
+  const [view, setView] = useState<"overview" | "class">("overview");
   const [classId, setClassId] = useState("");
-  const [showDownload, setShowDownload] = useState(false);
 
   const { data: overview, isLoading: loadingOverview } = useOverviewReport();
   const { data: classes = [] } = useClasses();
 
   const { data: classReport, isLoading: loadingClass } = useClassReport(Number(classId));
-
-  // Build per-class payment summary from overview.students
-  const classSummary = useMemo(() => {
-    if (!overview?.students?.length) return [];
-    const map: Record<string, {
-      class_name: string; count: number;
-      total: number; paid: number; remaining: number;
-      paid_full: number; partial: number; unpaid: number;
-    }> = {};
-    overview.students.forEach((s) => {
-      if (!map[s.class_name]) map[s.class_name] = { class_name: s.class_name, count: 0, total: 0, paid: 0, remaining: 0, paid_full: 0, partial: 0, unpaid: 0 };
-      const m = map[s.class_name];
-      m.count++; m.total += s.total_fees; m.paid += s.total_paid; m.remaining += s.remaining;
-      if (s.total_paid >= s.total_fees - 0.01) m.paid_full++;
-      else if (s.total_paid <= 0) m.unpaid++;
-      else m.partial++;
-    });
-    return Object.values(map).sort((a, b) => a.class_name.localeCompare(b.class_name));
-  }, [overview?.students]);
 
   const pieData = overview
     ? [
@@ -82,50 +62,13 @@ const ReportsPage = () => {
       ]
     : [];
 
-  const downloadCSV = () => {
-    if (!overview?.students?.length) return;
-    const header = ["Name", "Class", "Total Fees (TSh)", "Paid (TSh)", "Pending (TSh)"];
-    const rows = overview.students.map((s) => [
-      `"${s.name}"`, `"${s.class_name}"`, s.total_fees, s.total_paid, s.remaining,
-    ]);
-    const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
-    const a = Object.assign(document.createElement("a"), {
-      href: URL.createObjectURL(new Blob([csv], { type: "text/csv" })),
-      download: "student-payments.csv",
-    });
-    a.click();
-    setShowDownload(false);
-  };
-
-  const downloadPDF = () => {
-    if (!overview?.students?.length) return;
-    const rows = overview.students
-      .map((s) => `<tr><td>${s.name}</td><td>${s.class_name}</td><td>TSh ${s.total_fees.toLocaleString()}</td><td>TSh ${s.total_paid.toLocaleString()}</td><td>TSh ${s.remaining.toLocaleString()}</td></tr>`)
-      .join("");
-    const html = `<html><head><title>Student Payments</title><style>
-      body{font-family:sans-serif;padding:24px}h1{font-size:16px;margin-bottom:12px}
-      table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:7px 10px;font-size:12px;text-align:left}
-      th{background:#f0f0f0;font-weight:600}tr:nth-child(even){background:#fafafa}
-    </style></head><body>
-      <h1>Student Payment Report</h1>
-      <table><thead><tr><th>Name</th><th>Class</th><th>Total Fees</th><th>Paid</th><th>Pending</th></tr></thead>
-      <tbody>${rows}</tbody></table>
-    </body></html>`;
-    const win = window.open("", "_blank");
-    if (!win) return;
-    win.document.write(html);
-    win.document.close();
-    win.print();
-    setShowDownload(false);
-  };
-
   return (
     <div className="animate-fade-in space-y-6">
       {/* View Switcher */}
       <div>
         <h1 className="text-xl font-bold text-foreground">Reports</h1>
         <div className="mt-3 flex gap-1 rounded-2xl bg-card p-1.5 shadow-soft">
-          {(["overview", "class", "payments"] as const).map((v) => (
+          {(["overview", "class"] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
@@ -135,7 +78,7 @@ const ReportsPage = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {v === "payments" ? "Payments" : v}
+              {v}
             </button>
           ))}
         </div>

@@ -1,39 +1,93 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import api from "@/services/api";
 
 export type UserRole = "admin" | "school" | "teacher" | "parent";
 
-interface AuthUser {
-  id: string;
+export interface AuthUser {
+  id: number;
   name: string;
+  email: string;
   role: UserRole;
   avatar?: string;
-  childName?: string;
+  phone?: string;
+  school_id?: number;
+  school?: { id: number; name: string } | null;
+  childName?: string; // populated for parent role
 }
 
 interface AuthContextType {
   user: AuthUser | null;
-  login: (role: UserRole) => void;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  isLoading: boolean;
 }
-
-const mockUsers: Record<UserRole, AuthUser> = {
-  admin: { id: "1", name: "Admin User", role: "admin" },
-  school: { id: "2", name: "School Manager", role: "school" },
-  teacher: { id: "3", name: "Ms. Sarah", role: "teacher" },
-  parent: { id: "4", name: "John Doe", role: "parent", childName: "Emma Doe" },
-};
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const login = (role: UserRole) => setUser(mockUsers[role]);
-  const logout = () => setUser(null);
+  // Restore session on mount
+  useEffect(() => {
+    const token = localStorage.getItem("nursery_token");
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+    api
+      .get("/v1/auth/me")
+      .then(async (res) => {
+        // Laravel wraps standalone resources in { data: { ... } }
+        const u: AuthUser = res.data?.data ?? res.data;
+        // If parent, fetch first child's name for UI
+        if (u.role === "parent") {
+          try {
+            const students = await api.get("/v1/students");
+            const first = students.data?.data?.[0] ?? students.data?.[0];
+            if (first) u.childName = first.name;
+          } catch {}
+        }
+        setUser(u);
+      })
+      .catch(() => {
+        localStorage.removeItem("nursery_token");
+        localStorage.removeItem("nursery_user");
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    const res = await api.post("/v1/auth/login", { email, password });
+    const { token, user: userData } = res.data as { token: string; user: AuthUser };
+
+    localStorage.setItem("nursery_token", token);
+    localStorage.setItem("nursery_user", JSON.stringify(userData));
+
+    // Enrich parent with child name
+    if (userData.role === "parent") {
+      try {
+        const students = await api.get("/v1/students");
+        const first = students.data?.data?.[0] ?? students.data?.[0];
+        if (first) userData.childName = first.name;
+      } catch {}
+    }
+
+    setUser(userData);
+  };
+
+  const logout = () => {
+    api.post("/v1/auth/logout").catch(() => {});
+    localStorage.removeItem("nursery_token");
+    localStorage.removeItem("nursery_user");
+    setUser(null);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider
+      value={{ user, login, logout, isAuthenticated: !!user, isLoading }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -44,3 +98,4 @@ export const useAuth = () => {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 };
+

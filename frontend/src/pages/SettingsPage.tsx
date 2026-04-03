@@ -21,7 +21,7 @@ const TERMS = ["First", "Second", "Third"];
 const YEAR = new Date().getFullYear();
 const EMPTY = { name: "", amount: "", term: "First", year: String(YEAR) };
 
-const fmt = (n: number) => `₦${n?.toLocaleString() ?? 0}`;
+const fmt = (n: number) => `TSh ${(n ?? 0).toLocaleString()}`;
 
 const SettingsPage = () => {
   const { user } = useAuth();
@@ -154,7 +154,7 @@ const SettingsPage = () => {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Amount (₦) *</label>
+              <label className="text-sm font-medium">Amount (TSh) *</label>
               <Input
                 type="number"
                 value={form.amount}

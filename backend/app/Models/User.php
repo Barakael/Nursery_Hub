@@ -20,6 +20,7 @@ class User extends Authenticatable
         'role',
         'school_id',
         'phone',
+        'phone2',
         'avatar',
     ];
 

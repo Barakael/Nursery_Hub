@@ -15,6 +15,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import StudentsPage from "@/pages/StudentsPage";
 import ClassesPage from "@/pages/ClassesPage";
 import UsersPage from "@/pages/UsersPage";
+import SubjectsPage from "@/pages/SubjectsPage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
 
@@ -56,6 +57,7 @@ const AppRoutes = () => (
     <Route path="/students"    element={<ProtectedRoute><StudentsPage /></ProtectedRoute>} />
     <Route path="/classes"     element={<ProtectedRoute><ClassesPage /></ProtectedRoute>} />
     <Route path="/users"       element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
+    <Route path="/subjects"    element={<ProtectedRoute><SubjectsPage /></ProtectedRoute>} />
     <Route path="/reports"     element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
     <Route path="/settings"    element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
     <Route path="*"            element={<NotFound />} />

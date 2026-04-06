@@ -4,8 +4,21 @@ import SidebarNav from "./SidebarNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogOut } from "lucide-react";
 
+function formatChildrenLabel(names: string[]): string {
+  if (names.length === 0) return "";
+  if (names.length === 1) return `${names[0]}'s Parent`;
+  const last = names[names.length - 1];
+  const rest = names.slice(0, -1);
+  return `${rest.join(", ")} and ${last}'s Parent`;
+}
+
 const AppShell = ({ children }: { children: ReactNode }) => {
   const { user, logout } = useAuth();
+
+  const displayName =
+    user?.role === "parent" && user.childNames && user.childNames.length > 0
+      ? formatChildrenLabel(user.childNames)
+      : user?.name ?? "";
 
   return (
     <div className="min-h-screen bg-background">
@@ -22,7 +35,7 @@ const AppShell = ({ children }: { children: ReactNode }) => {
               <p className="text-xs font-medium text-primary-foreground/70">
                 {user.role === "parent" ? "👋 Welcome back," : "Hello,"}
               </p>
-              <h1 className="text-base font-bold text-primary-foreground">{user.name}</h1>
+              <h1 className="text-base font-bold text-primary-foreground">{displayName}</h1>
             </div>
             <button
               onClick={logout}
@@ -41,7 +54,7 @@ const AppShell = ({ children }: { children: ReactNode }) => {
             <p className="text-sm text-muted-foreground">
               {user.role === "parent" ? "👋 Welcome back," : "Hello,"}
             </p>
-            <h1 className="text-xl font-bold text-foreground">{user.name}</h1>
+            <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
           </div>
           <button
             onClick={logout}

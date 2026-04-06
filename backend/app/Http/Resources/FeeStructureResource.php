@@ -18,6 +18,8 @@ class FeeStructureResource extends JsonResource
             'due_date'           => $this->due_date?->toDateString(),
             'is_active'          => $this->is_active,
             'school_id'          => $this->school_id,
+            'class_id'           => $this->class_id,
+            'class_name'         => $this->whenLoaded('schoolClass', fn() => $this->schoolClass?->name),
             'collected'          => $this->collected,
             'pending'            => $this->pending,
             'collection_percent' => $this->collection_percent,

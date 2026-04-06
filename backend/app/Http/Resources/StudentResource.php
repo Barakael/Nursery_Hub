@@ -21,7 +21,7 @@ class StudentResource extends JsonResource
             'class_id'         => $this->class_id,
             'parent_id'        => $this->parent_id,
             'class'            => $this->whenLoaded('schoolClass', fn() => ['id' => $this->schoolClass->id, 'name' => $this->schoolClass->name]),
-            'parent'           => $this->whenLoaded('parent', fn() => ['id' => $this->parent->id, 'name' => $this->parent->name, 'phone' => $this->parent->phone]),
+            'parent'           => $this->whenLoaded('parent', fn() => ['id' => $this->parent->id, 'name' => $this->parent->name, 'phone' => $this->parent->phone, 'phone2' => $this->parent->phone2]),
         ];
     }
 }

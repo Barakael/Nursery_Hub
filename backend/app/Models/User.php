@@ -22,6 +22,7 @@ class User extends Authenticatable
         'phone',
         'phone2',
         'avatar',
+        'can_manage_timetable',
     ];
 
     protected $hidden = [
@@ -32,8 +33,9 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'email_verified_at'    => 'datetime',
+            'password'             => 'hashed',
+            'can_manage_timetable' => 'boolean',
         ];
     }
 
@@ -84,5 +86,13 @@ class User extends Authenticatable
         return $this->role === 'teacher';
     }
 
+    public function isParent(): bool
+    {
+        return $this->role === 'parent';
+    }
 
+    public function canManageTimetable(): bool
+    {
+        return $this->isAdmin() || $this->isSchool() || ($this->isTeacher() && (bool) $this->can_manage_timetable);
+    }
 }

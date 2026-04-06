@@ -8,7 +8,7 @@ export interface Student {
   class_id: number;
   class?: { id: number; name: string } | null;
   parent_id?: number;
-  parent?: { id: number; name: string; phone?: string } | null;
+  parent?: { id: number; name: string; phone?: string; phone2?: string; email?: string } | null;
   dob?: string;
   gender?: string;
   photo?: string;
@@ -38,16 +38,15 @@ export const useStudent = (id: number) =>
 export const useCreateStudent = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<Student>) =>
+    mutationFn: (data: Partial<Student> & { parent_name?: string; parent_phone?: string; parent_phone2?: string; parent_email?: string }) =>
       api.post("/v1/students", data).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["students"] }),
   });
 };
 
 export const useUpdateStudent = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: Partial<Student> & { id: number }) =>
+    mutationFn: ({ id, ...data }: Partial<Student> & { id: number; parent_name?: string; parent_phone?: string; parent_phone2?: string; parent_email?: string }) =>
       api.put(`/v1/students/${id}`, data).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["students"] }),
   });

@@ -4,10 +4,14 @@ import api from "@/services/api";
 export interface FeeStructure {
   id: number;
   name: string;
-  amount: number;
+  total_amount: number;
+  amount: number; // alias used in UI
   term: string;
-  year: number;
+  academic_year: string;
+  year: number; // alias used in UI
   school_id: number;
+  class_id?: number | null;
+  class_name?: string | null;
   collected?: number;
   pending?: number;
   collection_percent?: number;

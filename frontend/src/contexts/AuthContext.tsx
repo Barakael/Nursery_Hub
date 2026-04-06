@@ -12,7 +12,9 @@ export interface AuthUser {
   phone?: string;
   school_id?: number;
   school?: { id: number; name: string } | null;
-  childName?: string; // populated for parent role
+  children?: { id: number; name: string }[]; // populated for parent role
+  childNames?: string[]; // derived from children
+  can_manage_timetable?: boolean;
 }
 
 interface AuthContextType {
@@ -42,13 +44,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .then(async (res) => {
         // Laravel wraps standalone resources in { data: { ... } }
         const u: AuthUser = res.data?.data ?? res.data;
-        // If parent, fetch first child's name for UI
-        if (u.role === "parent") {
-          try {
-            const students = await api.get("/v1/students");
-            const first = students.data?.data?.[0] ?? students.data?.[0];
-            if (first) u.childName = first.name;
-          } catch {}
+        // Derive childNames from children returned by the API
+        if (u.role === "parent" && u.children) {
+          u.childNames = u.children.map((c) => c.name).filter(Boolean);
         }
         setUser(u);
       })
@@ -66,13 +64,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem("nursery_token", token);
     localStorage.setItem("nursery_user", JSON.stringify(userData));
 
-    // Enrich parent with child name
-    if (userData.role === "parent") {
-      try {
-        const students = await api.get("/v1/students");
-        const first = students.data?.data?.[0] ?? students.data?.[0];
-        if (first) userData.childName = first.name;
-      } catch {}
+    // Derive childNames from children returned by the login response
+    if (userData.role === "parent" && userData.children) {
+      userData.childNames = userData.children.map((c) => c.name).filter(Boolean);
     }
 
     setUser(userData);

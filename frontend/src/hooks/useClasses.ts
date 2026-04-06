@@ -5,7 +5,7 @@ export interface SchoolClass {
   id: number;
   name: string;
   school_id: number;
-  students_count?: number;
+  student_count?: number;
 }
 
 export const useClasses = () =>

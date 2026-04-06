@@ -4,10 +4,13 @@ import api from "@/services/api";
 export interface Subject {
   id: number;
   name: string;
+  description?: string;
   class_id: number;
   class_name?: string;
-  teacher_id?: number;
+  class?: { id: number; name: string } | null;
+  teacher_id?: number | null;
   teacher_name?: string;
+  teacher?: { id: number; name: string } | null;
 }
 
 interface SubjectsParams {
@@ -18,7 +21,16 @@ export const useSubjects = (params?: SubjectsParams) =>
   useQuery({
     queryKey: ["subjects", params],
     queryFn: () =>
-      api.get("/v1/subjects", { params }).then((r) => r.data.data as Subject[]),
+      api.get("/v1/subjects", { params }).then((r) => {
+        const raw: any[] = r.data.data ?? r.data;
+        return raw.map((s): Subject => ({
+          ...s,
+          class_id: s.class_id ?? s.class?.id,
+          class_name: s.class_name ?? s.class?.name,
+          teacher_id: s.teacher_id ?? s.teacher?.id ?? null,
+          teacher_name: s.teacher_name ?? s.teacher?.name ?? undefined,
+        }));
+      }),
   });
 
 export const useCreateSubject = () => {

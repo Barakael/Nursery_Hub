@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Plus, Trash2, Mail, Phone, UserCircle } from "lucide-react";
-import { useUsers, useCreateUser, useDeleteUser } from "@/hooks/useUsers";
+import { Plus, Trash2, Mail, Phone, UserCircle, Shield, ShieldOff } from "lucide-react";
+import { useUsers, useCreateUser, useDeleteUser, useUpdateUser } from "@/hooks/useUsers";
 import { useClasses } from "@/hooks/useClasses";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ const UsersPage = () => {
   const { data: classes = [] } = useClasses();
   const createUser = useCreateUser();
   const deleteUser = useDeleteUser();
+  const updateUser = useUpdateUser();
 
   const canManage = user?.role === "admin" || user?.role === "school";
 
@@ -125,6 +126,22 @@ const UsersPage = () => {
               <span className={`hidden shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium sm:inline-block ${roleColors[u.role] ?? ""}`}>
                 {u.role}
               </span>
+              {canManage && tab === "teacher" && (
+                <button
+                  title={u.can_manage_timetable ? "Revoke timetable access" : "Grant timetable access"}
+                  onClick={() => updateUser.mutateAsync({ id: u.id, can_manage_timetable: !u.can_manage_timetable })}
+                  className={`flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition ${
+                    u.can_manage_timetable
+                      ? "bg-primary/15 text-primary hover:bg-destructive/10 hover:text-destructive"
+                      : "bg-muted text-muted-foreground hover:bg-primary/15 hover:text-primary"
+                  }`}
+                >
+                  {u.can_manage_timetable
+                    ? <Shield className="h-3.5 w-3.5" />
+                    : <ShieldOff className="h-3.5 w-3.5" />}
+                  <span className="hidden sm:inline">{u.can_manage_timetable ? "Timetable" : "No Timetable"}</span>
+                </button>
+              )}
               {canManage && (
                 <Button
                   variant="ghost"

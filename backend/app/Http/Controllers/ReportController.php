@@ -26,50 +26,55 @@ class ReportController extends Controller
         $totalParents  = User::where('school_id', $schoolId)->where('role', 'parent')->count();
 
         // ── Fee stats ─────────────────────────────────────────────────────────
-        $feeStructure = FeeStructure::where('school_id', $schoolId)
-            ->where('is_active', true)->latest()->first();
-
         $totalFees        = 0;
         $totalCollected   = 0;
         $collectionPct    = 0;
         $paidFull = $paidPartial = $unpaid = 0;
         $studentPayments  = [];
 
-        if ($feeStructure) {
-            $studentsQ = Student::with('schoolClass')
-                ->where('school_id', $schoolId)->get();
+        $studentsQ = Student::with('schoolClass')
+            ->where('school_id', $schoolId)->get();
 
-            $totalFees = $feeStructure->total_amount * $studentsQ->count();
+        foreach ($studentsQ as $s) {
+            $fs = FeeStructure::where('school_id', $schoolId)
+                ->where('is_active', true)
+                ->where('class_id', $s->class_id)
+                ->latest()->first()
+                ?? FeeStructure::where('school_id', $schoolId)
+                    ->where('is_active', true)
+                    ->whereNull('class_id')
+                    ->latest()->first();
 
-            foreach ($studentsQ as $s) {
-                $paid = (float) Payment::where('student_id', $s->id)
-                    ->where('fee_structure_id', $feeStructure->id)
-                    ->sum('amount_paid');
+            if (!$fs) continue;
 
-                $totalCollected += $paid;
+            $paid = (float) Payment::where('student_id', $s->id)
+                ->where('fee_structure_id', $fs->id)
+                ->sum('amount_paid');
 
-                if ($paid <= 0) {
-                    $unpaid++;
-                } elseif ($paid >= $feeStructure->total_amount - 0.01) {
-                    $paidFull++;
-                } else {
-                    $paidPartial++;
-                }
+            $totalFees      += $fs->total_amount;
+            $totalCollected += $paid;
 
-                $studentPayments[] = [
-                    'id'         => $s->id,
-                    'name'       => $s->name,
-                    'class_name' => $s->schoolClass?->name ?? '—',
-                    'total_fees' => $feeStructure->total_amount,
-                    'total_paid' => $paid,
-                    'remaining'  => max(0, $feeStructure->total_amount - $paid),
-                ];
+            if ($paid <= 0) {
+                $unpaid++;
+            } elseif ($paid >= $fs->total_amount - 0.01) {
+                $paidFull++;
+            } else {
+                $paidPartial++;
             }
 
-            $collectionPct = $totalFees > 0
-                ? round(($totalCollected / $totalFees) * 100, 1)
-                : 0;
+            $studentPayments[] = [
+                'id'         => $s->id,
+                'name'       => $s->name,
+                'class_name' => $s->schoolClass?->name ?? '—',
+                'total_fees' => $fs->total_amount,
+                'total_paid' => $paid,
+                'remaining'  => max(0, $fs->total_amount - $paid),
+            ];
         }
+
+        $collectionPct = $totalFees > 0
+            ? round(($totalCollected / $totalFees) * 100, 1)
+            : 0;
 
         // ── Enrollment by class ───────────────────────────────────────────────
         $enrollmentByClass = SchoolClass::withCount('students')

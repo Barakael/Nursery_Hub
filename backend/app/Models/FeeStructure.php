@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\SchoolClass;
 
 class FeeStructure extends Model
 {
@@ -11,6 +12,7 @@ class FeeStructure extends Model
 
     protected $fillable = [
         'school_id',
+        'class_id',
         'name',
         'total_amount',
         'term',
@@ -28,6 +30,11 @@ class FeeStructure extends Model
     public function school()
     {
         return $this->belongsTo(School::class);
+    }
+
+    public function schoolClass()
+    {
+        return $this->belongsTo(SchoolClass::class, 'class_id');
     }
 
     public function payments()

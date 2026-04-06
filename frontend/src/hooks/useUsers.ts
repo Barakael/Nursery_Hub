@@ -10,6 +10,7 @@ export interface AppUser {
   school_id?: number;
   school_name?: string;
   avatar?: string;
+  can_manage_timetable?: boolean;
 }
 
 interface UsersParams {

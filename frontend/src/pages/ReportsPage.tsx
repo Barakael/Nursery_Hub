@@ -1,14 +1,17 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend,
 } from "recharts";
 import { useOverviewReport, useClassReport } from "@/hooks/useReports";
 import { useClasses } from "@/hooks/useClasses";
+import { useSubjects } from "@/hooks/useSubjects";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Users, GraduationCap, TrendingUp, Wallet } from "lucide-react";
+import { Users, GraduationCap, TrendingUp, Wallet, BookOpen } from "lucide-react";
 
 const COLORS = [
   "#020884ef", // blue
@@ -50,10 +53,60 @@ const ReportsPage = () => {
   const [view, setView] = useState<"overview" | "class">("overview");
   const [classId, setClassId] = useState("");
 
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { data: mySubjects = [] } = useSubjects();
+
   const { data: overview, isLoading: loadingOverview } = useOverviewReport();
   const { data: classes = [] } = useClasses();
 
   const { data: classReport, isLoading: loadingClass } = useClassReport(Number(classId));
+
+  // ── Teacher view ──────────────────────────────────────────────────────────
+  if (user?.role === "teacher") {
+    return (
+      <div className="animate-fade-in space-y-5">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">My Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Your assigned subjects</p>
+        </div>
+        {mySubjects.length === 0 ? (
+          <div className="rounded-2xl bg-card p-8 text-center shadow-card">
+            <BookOpen className="mx-auto mb-3 h-10 w-10 opacity-20 text-muted-foreground" />
+            <p className="font-medium text-muted-foreground">No subjects assigned yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">Ask the school manager to assign subjects to you.</p>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {mySubjects.map((s) => (
+              <div key={s.id} className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-bold text-foreground">{s.name}</p>
+                    {s.class_name && (
+                      <span className="mt-0.5 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                        {s.class_name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate(`/scores?subject=${s.id}`)}
+                  className="mt-4 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground transition hover:opacity-90"
+                >
+                  Enter Scores →
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+  // ── End teacher view ──────────────────────────────────────────────────────
 
   const pieData = overview
     ? [

@@ -41,8 +41,12 @@ class PaymentController extends Controller
         $schoolId    = $student->school_id;
         $feeStructure = FeeStructure::where('school_id', $schoolId)
             ->where('is_active', true)
-            ->latest()
-            ->first();
+            ->where('class_id', $student->class_id)
+            ->latest()->first()
+            ?? FeeStructure::where('school_id', $schoolId)
+                ->where('is_active', true)
+                ->whereNull('class_id')
+                ->latest()->first();
 
         if (!$feeStructure) {
             return response()->json([

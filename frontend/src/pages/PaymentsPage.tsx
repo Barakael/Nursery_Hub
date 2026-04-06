@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { CheckCircle, AlertCircle, PlusCircle, Loader2, TrendingUp, Wallet } from "lucide-react";
+import { useState, useMemo } from "react";
+import { CheckCircle, AlertCircle, PlusCircle, Loader2, Download, FileSpreadsheet, FileText, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStudents } from "@/hooks/useStudents";
 import { usePayments, useStudentBalance, useStudentPayments, useRecordPayment } from "@/hooks/usePayments";
@@ -30,8 +30,118 @@ const StaffFinanceView = () => {
   const recordPayment = useRecordPayment();
 
   const [lookupId, setLookupId] = useState("");
+  const [lookupSearch, setLookupSearch] = useState("");
+  const [lookupOpen, setLookupOpen] = useState(false);
   const { data: lookupBalance } = useStudentBalance(Number(lookupId) || 0);
   const { data: lookupPayments = [] } = useStudentPayments(Number(lookupId) || 0);
+
+  const [showDownload, setShowDownload] = useState(false);
+
+  const classSummary = useMemo(() => {
+    if (!overview?.students?.length) return [];
+    const map: Record<string, {
+      class_name: string; count: number;
+      total: number; paid: number; remaining: number;
+      paid_full: number; partial: number; unpaid: number;
+    }> = {};
+    overview.students.forEach((s) => {
+      if (!map[s.class_name]) map[s.class_name] = { class_name: s.class_name, count: 0, total: 0, paid: 0, remaining: 0, paid_full: 0, partial: 0, unpaid: 0 };
+      const m = map[s.class_name];
+      m.count++; m.total += s.total_fees; m.paid += s.total_paid; m.remaining += s.remaining;
+      if (s.total_paid >= s.total_fees - 0.01) m.paid_full++;
+      else if (s.total_paid <= 0) m.unpaid++;
+      else m.partial++;
+    });
+    return Object.values(map).sort((a, b) => a.class_name.localeCompare(b.class_name));
+  }, [overview?.students]);
+
+  const downloadCSV = () => {
+    if (!overview?.students?.length) return;
+    // Group students by class, sorted alphabetically
+    const groups: Record<string, typeof overview.students> = {};
+    overview.students.forEach((s) => {
+      if (!groups[s.class_name]) groups[s.class_name] = [];
+      groups[s.class_name].push(s);
+    });
+    const header = ["Name", "Class", "Total Fees (TSh)", "Paid (TSh)", "Pending (TSh)"];
+    const lines: string[] = [header.join(",")];
+    Object.keys(groups).sort().forEach((className) => {
+      lines.push(""); // blank separator
+      lines.push(`"── ${className} ──","","","",""`);
+      groups[className].forEach((s) => {
+        lines.push([`"${s.name}"`, `"${s.class_name}"`, s.total_fees, s.total_paid, s.remaining].join(","));
+      });
+      // Class subtotal
+      const total = groups[className].reduce((acc, s) => acc + s.total_fees, 0);
+      const paid  = groups[className].reduce((acc, s) => acc + s.total_paid, 0);
+      const rem   = groups[className].reduce((acc, s) => acc + s.remaining, 0);
+      lines.push([`"Subtotal (${className})"`, `""`, total, paid, rem].join(","));
+    });
+    const a = Object.assign(document.createElement("a"), {
+      href: URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" })),
+      download: "student-payments-by-class.csv",
+    });
+    a.click();
+    setShowDownload(false);
+  };
+
+  const downloadPDF = () => {
+    if (!overview?.students?.length) return;
+    // Group students by class, sorted alphabetically
+    const groups: Record<string, typeof overview.students> = {};
+    overview.students.forEach((s) => {
+      if (!groups[s.class_name]) groups[s.class_name] = [];
+      groups[s.class_name].push(s);
+    });
+    const classTables = Object.keys(groups).sort().map((className) => {
+      const classStudents = groups[className];
+      const total = classStudents.reduce((acc, s) => acc + s.total_fees, 0);
+      const paid  = classStudents.reduce((acc, s) => acc + s.total_paid, 0);
+      const rem   = classStudents.reduce((acc, s) => acc + s.remaining, 0);
+      const studentRows = classStudents
+        .map((s) => `<tr><td>${s.name}</td><td>TSh ${s.total_fees.toLocaleString()}</td><td>TSh ${s.total_paid.toLocaleString()}</td><td>TSh ${s.remaining.toLocaleString()}</td></tr>`)
+        .join("");
+      return `
+        <div class="class-section">
+          <h2>${className}</h2>
+          <table>
+            <thead><tr><th>Name</th><th>Total Fees</th><th>Paid</th><th>Pending</th></tr></thead>
+            <tbody>
+              ${studentRows}
+              <tr class="subtotal">
+                <td><strong>Subtotal</strong></td>
+                <td><strong>TSh ${total.toLocaleString()}</strong></td>
+                <td><strong>TSh ${paid.toLocaleString()}</strong></td>
+                <td><strong>TSh ${rem.toLocaleString()}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>`;
+    }).join("");
+    const html = `<html><head><title>Student Payments by Class</title><style>
+      body{font-family:sans-serif;padding:24px;color:#111}
+      h1{font-size:18px;margin-bottom:4px}
+      .subtitle{font-size:11px;color:#666;margin-bottom:20px}
+      .class-section{margin-bottom:28px;page-break-inside:avoid}
+      h2{font-size:13px;font-weight:700;margin:0 0 6px;padding:6px 10px;background:#f0f4ff;border-left:4px solid #020884;border-radius:4px}
+      table{border-collapse:collapse;width:100%;margin-bottom:4px}
+      th,td{border:1px solid #ddd;padding:6px 10px;font-size:11px;text-align:left}
+      th{background:#f5f5f5;font-weight:600}
+      tr:nth-child(even){background:#fafafa}
+      tr.subtotal td{background:#f0f4ff;font-size:11px}
+      @media print{.class-section{page-break-inside:avoid}}
+    </style></head><body>
+      <h1>Student Payment Report</h1>
+      <p class="subtitle">Generated ${new Date().toLocaleDateString()} &mdash; ${overview.students.length} students</p>
+      ${classTables}
+    </body></html>`;
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.print();
+    setShowDownload(false);
+  };
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -75,7 +185,6 @@ const StaffFinanceView = () => {
   const collected = overview?.total_collected ?? 0;
   const totalFees = overview?.total_fees ?? 0;
   const pct = overview?.collection_percent ?? 0;
-  const pending = totalFees - collected;
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -101,89 +210,51 @@ const StaffFinanceView = () => {
         <p className="mt-2 text-xs text-primary-foreground/60">{pct}% collected</p>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-2xl bg-card p-4 shadow-soft text-center">
-          <p className="text-xs text-muted-foreground">Fully Paid</p>
-          <p className="text-2xl font-extrabold text-success">{overview?.paid_full ?? 0}</p>
-          <p className="text-xs text-muted-foreground">students</p>
-        </div>
-        <div className="rounded-2xl bg-card p-4 shadow-soft text-center">
-          <p className="text-xs text-muted-foreground">Part Paid</p>
-          <p className="text-2xl font-extrabold text-warning">{overview?.paid_partial ?? 0}</p>
-          <p className="text-xs text-muted-foreground">students</p>
-        </div>
-        <div className="rounded-2xl bg-card p-4 shadow-soft text-center">
-          <p className="text-xs text-muted-foreground">Not Paid</p>
-          <p className="text-2xl font-extrabold text-destructive">{overview?.unpaid ?? 0}</p>
-          <p className="text-xs text-muted-foreground">students</p>
-        </div>
-      </div>
-
-      {/* Balance row */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-success/10 p-4 shadow-soft">
-          <CheckCircle className="mb-1 h-5 w-5 text-success" />
-          <p className="text-lg font-bold text-success">{fmt(collected)}</p>
-          <p className="text-xs text-muted-foreground">Collected</p>
-        </div>
-        <div className="rounded-2xl bg-destructive/10 p-4 shadow-soft">
-          <AlertCircle className="mb-1 h-5 w-5 text-destructive" />
-          <p className="text-lg font-bold text-destructive">{fmt(pending)}</p>
-          <p className="text-xs text-muted-foreground">Pending</p>
-        </div>
-      </div>
-
-      {/* Payments List */}
-      <div className="rounded-2xl bg-card p-5 shadow-card">
-        <h3 className="mb-4 font-bold text-card-foreground">Recent Payments</h3>
-        {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : payments.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">No payments recorded yet.</p>
-        ) : (
-          <div className="space-y-3">
-            {payments.map((p) => (
-              <div key={p.id} className="flex items-center justify-between rounded-xl bg-accent/50 px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/15">
-                    <CheckCircle className="h-5 w-5 text-success" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-card-foreground">{p.student?.name ?? "—"}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {methodLabel[p.method ?? ""] ?? p.method ?? "—"}
-                      {p.reference ? ` · ${p.reference}` : ""}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-card-foreground">{fmt(p.amount_paid)}</p>
-                  <p className="text-xs text-muted-foreground">{p.payment_date}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Student Payment Lookup */}
+          {/* Student Payment Lookup */}
       <div className="rounded-2xl bg-card p-5 shadow-card">
         <h3 className="mb-3 font-bold text-card-foreground">Student Payment Lookup</h3>
-        <Select value={lookupId} onValueChange={setLookupId}>
-          <SelectTrigger>
-            <SelectValue placeholder="Search a student…" />
-          </SelectTrigger>
-          <SelectContent>
-            {students.map((s) => (
-              <SelectItem key={s.id} value={String(s.id)}>
-                {s.name}{s.class?.name ? ` — ${s.class.name}` : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="relative">
+          <input
+            type="text"
+            value={lookupSearch}
+            onChange={(e) => {
+              setLookupSearch(e.target.value);
+              setLookupId("");
+              setLookupOpen(true);
+            }}
+            onFocus={() => setLookupOpen(true)}
+            placeholder="Type a student name…"
+            className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+          {lookupOpen && lookupSearch.length > 0 && (() => {
+            const matches = students.filter((s) =>
+              s.name.toLowerCase().includes(lookupSearch.toLowerCase())
+            );
+            return matches.length > 0 ? (
+              <div className="absolute z-20 mt-1 w-full rounded-xl border border-border bg-card shadow-lg overflow-hidden">
+                {matches.slice(0, 8).map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onMouseDown={() => {
+                      setLookupId(String(s.id));
+                      setLookupSearch(s.name + (s.class?.name ? ` — ${s.class.name}` : ""));
+                      setLookupOpen(false);
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-sm hover:bg-accent transition-colors"
+                  >
+                    <span className="font-semibold text-card-foreground">{s.name}</span>
+                    {s.class?.name && <span className="ml-2 text-xs text-muted-foreground">{s.class.name}</span>}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="absolute z-20 mt-1 w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground shadow-lg">
+                No students found.
+              </div>
+            );
+          })()}
+        </div>
 
         {lookupId && lookupBalance && (
           <div className="mt-4 space-y-3">
@@ -238,6 +309,113 @@ const StaffFinanceView = () => {
         )}
       </div>
 
+      {/* Summary Stats — 3 columns with brand colors */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-2xl p-3 text-center shadow-soft" style={{ backgroundColor: "rgba(21,128,61,0.1)" }}>
+          <p className="text-2xl font-extrabold" style={{ color: "#15803d" }}>{overview?.paid_full ?? 0}</p>
+          <p className="text-[11px] font-semibold mt-0.5" style={{ color: "#15803d" }}>Fully Paid</p>
+        </div>
+        <div className="rounded-2xl p-4 text-center shadow-soft" style={{ backgroundColor: "rgba(239,200,58,0.15)" }}>
+          <p className="text-2xl font-extrabold" style={{ color: "#ca8a04" }}>{overview?.paid_partial ?? 0}</p>
+          <p className="text-[11px] font-semibold mt-0.5" style={{ color: "#ca8a04" }}>Part Paid</p>
+        </div>
+        <div className="rounded-2xl p-4 text-center shadow-soft" style={{ backgroundColor: "rgba(2,8,132,0.1)" }}>
+          <p className="text-2xl font-extrabold" style={{ color: "#020884" }}>{overview?.unpaid ?? 0}</p>
+          <p className="text-[11px] font-semibold mt-0.5" style={{ color: "#020884" }}>Not Paid</p>
+        </div>
+      </div>
+
+  
+
+      {/* Class Payment Summary */}
+      <div className="hidden md:block rounded-2xl bg-card p-5 shadow-card">
+        <h3 className="mb-4 font-bold text-card-foreground">Summary by Class</h3>
+        {!classSummary.length ? (
+          <p className="py-4 text-center text-sm text-muted-foreground">No fee data available.</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-3">
+            {classSummary.map((c) => {
+              const pct = c.total > 0 ? Math.round((c.paid / c.total) * 100) : 0;
+              return (
+                <div key={c.class_name} className="rounded-2xl border border-border p-3 flex flex-col gap-2">
+                  <div>
+                    <p className="text-sm font-bold text-card-foreground truncate">{c.class_name}</p>
+                    <p className="text-[10px] text-muted-foreground">{c.count} student{c.count !== 1 ? "s" : ""}</p>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-accent">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: "#15803d" }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground text-right">{pct}%</p>
+                  <div className="grid grid-cols-3 gap-1 text-center">
+                    <div className="rounded-lg py-1.5" style={{ backgroundColor: "rgba(21,128,61,0.1)" }}>
+                      <p className="text-xs font-extrabold" style={{ color: "#15803d" }}>{c.paid_full}</p>
+                      <p className="text-[9px] text-muted-foreground">Paid</p>
+                    </div>
+                    <div className="rounded-lg py-1.5" style={{ backgroundColor: "rgba(239,200,58,0.15)" }}>
+                      <p className="text-xs font-extrabold" style={{ color: "#ca8a04" }}>{c.partial}</p>
+                      <p className="text-[9px] text-muted-foreground">Part</p>
+                    </div>
+                    <div className="rounded-lg py-1.5" style={{ backgroundColor: "rgba(2,8,132,0.1)" }}>
+                      <p className="text-xs font-extrabold" style={{ color: "#020884" }}>{c.unpaid}</p>
+                      <p className="text-[9px] text-muted-foreground">None</p>
+                    </div>
+                  </div>
+                  <div className="text-[10px] space-y-0.5">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Collected</span>
+                      <span className="font-semibold" style={{ color: "#15803d" }}>{fmt(c.paid)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Pending</span>
+                      <span className="font-semibold text-destructive">{fmt(c.remaining)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+
+      {/* Payments List */}
+      <div className="rounded-2xl bg-card p-5 shadow-card">
+        <h3 className="mb-4 font-bold text-card-foreground">Recent Payments</h3>
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : payments.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">No payments recorded yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {payments.map((p) => (
+              <div key={p.id} className="flex items-center justify-between rounded-xl bg-accent/50 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/15">
+                    <CheckCircle className="h-5 w-5 text-success" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-card-foreground">{p.student?.name ?? "—"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {methodLabel[p.method ?? ""] ?? p.method ?? "—"}
+                      {p.reference ? ` · ${p.reference}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-card-foreground">{fmt(p.amount_paid)}</p>
+                  <p className="text-xs text-muted-foreground">{p.payment_date}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Record Payment Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm">
@@ -250,7 +428,7 @@ const StaffFinanceView = () => {
             )}
             <div>
               <label className="mb-1 block text-xs font-semibold text-muted-foreground">Student *</label>
-              <Select value={form.student_id} onValueChange={(v) => setForm((f) => ({ ...f, student_id: v }))}>
+              <Select value={form.student_id} onValueChange={(v) => setForm((f) => ({ ...f, student_id: v, fee_structure_id: "" }))}>
                 <SelectTrigger><SelectValue placeholder="Select student…" /></SelectTrigger>
                 <SelectContent>
                   {students.map((s) => (
@@ -264,7 +442,13 @@ const StaffFinanceView = () => {
               <Select value={form.fee_structure_id} onValueChange={(v) => setForm((f) => ({ ...f, fee_structure_id: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select fee structure…" /></SelectTrigger>
                 <SelectContent>
-                  {feeStructures.map((f) => (
+                  {feeStructures
+                    .filter((f) => {
+                      const selectedStudent = students.find((s) => String(s.id) === form.student_id);
+                      if (!selectedStudent) return true;
+                      return !f.class_id || f.class_id === selectedStudent.class_id;
+                    })
+                    .map((f) => (
                     <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -321,6 +505,37 @@ const StaffFinanceView = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* ── Floating Download FAB ── */}
+      {overview?.students?.length ? (
+        <div className="fixed bottom-24 right-4 z-50 md:bottom-8 md:right-8 flex flex-col items-end gap-2">
+          {showDownload && (
+            <div className="flex flex-col gap-2 mb-1">
+              <button
+                onClick={downloadCSV}
+                className="flex items-center gap-2 rounded-2xl bg-card border border-border px-4 py-2.5 text-sm font-semibold shadow-lg hover:bg-accent transition-colors"
+              >
+                <FileSpreadsheet className="h-4 w-4" style={{ color: "#15803d" }} />
+                Excel (.csv)
+              </button>
+              <button
+                onClick={downloadPDF}
+                className="flex items-center gap-2 rounded-2xl bg-card border border-border px-4 py-2.5 text-sm font-semibold shadow-lg hover:bg-accent transition-colors"
+              >
+                <FileText className="h-4 w-4" style={{ color: "#020884" }} />
+                PDF (print)
+              </button>
+            </div>
+          )}
+          <button
+            onClick={() => setShowDownload((v) => !v)}
+            className="flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition-opacity p-3.5"
+            title="Download student payments"
+          >
+            {showDownload ? <X className="h-5 w-5" /> : <Download className="h-5 w-5" />}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 };

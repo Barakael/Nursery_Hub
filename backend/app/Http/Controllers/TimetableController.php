@@ -40,6 +40,10 @@ class TimetableController extends Controller
 
     public function store(Request $request)
     {
+        if (!$request->user()->canManageTimetable()) {
+            return response()->json(['message' => 'Forbidden. Timetable management not permitted.'], 403);
+        }
+
         $data = $request->validate([
             'type'        => ['required', 'in:subject,meal'],
             'day_of_week' => ['required', 'in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday'],
@@ -60,6 +64,10 @@ class TimetableController extends Controller
 
     public function update(Request $request, TimetableSlot $slot)
     {
+        if (!$request->user()->canManageTimetable()) {
+            return response()->json(['message' => 'Forbidden. Timetable management not permitted.'], 403);
+        }
+
         $data = $request->validate([
             'type'        => ['in:subject,meal'],
             'day_of_week' => ['in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday'],
@@ -74,8 +82,12 @@ class TimetableController extends Controller
         return new TimetableSlotResource($slot->load('schoolClass'));
     }
 
-    public function destroy(TimetableSlot $slot)
+    public function destroy(Request $request, TimetableSlot $slot)
     {
+        if (!$request->user()->canManageTimetable()) {
+            return response()->json(['message' => 'Forbidden. Timetable management not permitted.'], 403);
+        }
+
         $slot->delete();
         return response()->json(['message' => 'Timetable slot deleted.']);
     }

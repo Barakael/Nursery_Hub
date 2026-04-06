@@ -60,10 +60,11 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $data = $request->validate([
-            'name'     => ['sometimes', 'string', 'max:255'],
-            'email'    => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
-            'password' => ['nullable', 'string', 'min:8'],
-            'phone'    => ['nullable', 'string', 'max:20'],
+            'name'                 => ['sometimes', 'string', 'max:255'],
+            'email'                => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
+            'password'             => ['nullable', 'string', 'min:8'],
+            'phone'                => ['nullable', 'string', 'max:20'],
+            'can_manage_timetable' => ['sometimes', 'boolean'],
         ]);
 
         if (isset($data['password'])) {

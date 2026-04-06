@@ -27,7 +27,7 @@ import type { AuthUser } from "@/contexts/AuthContext";
 
 const TERMS = ["First", "Second", "Third"];
 const YEAR = new Date().getFullYear();
-const EMPTY_FEE = { name: "", amount: "", term: "First", year: String(YEAR) };
+const EMPTY_FEE = { name: "", amount: "", term: "First", year: String(YEAR), class_ids: [] as string[] };
 const fmt = (n: number) => `TSh ${(n ?? 0).toLocaleString()}`;
 
 // ─── Profile Tab ─────────────────────────────────────────────────────────────
@@ -162,7 +162,7 @@ const ClassesTab = () => {
         await updateClass.mutateAsync({ id: editing.id, name: form.name });
         toast({ title: "Class updated" });
       } else {
-        await createClass.mutateAsync({ name: form.name, capacity: form.capacity ? Number(form.capacity) : undefined });
+        await createClass.mutateAsync({ name: form.name });
         toast({ title: "Class created" });
       }
       setOpen(false);
@@ -283,6 +283,7 @@ const FeesTab = () => {
   const [form, setForm] = useState(EMPTY_FEE);
 
   const { data: fees = [], isLoading } = useFeeStructures();
+  const { data: classes = [] } = useClasses();
   const createFee = useCreateFeeStructure();
   const updateFee = useUpdateFeeStructure();
   const deleteFee = useDeleteFeeStructure();
@@ -290,19 +291,45 @@ const FeesTab = () => {
   const openNew = () => { setEditing(null); setForm(EMPTY_FEE); setOpen(true); };
   const openEdit = (f: typeof fees[0]) => {
     setEditing({ id: f.id });
-    setForm({ name: f.name, amount: String(f.amount), term: f.term, year: String(f.year) });
+    setForm({
+      name: f.name,
+      amount: String(f.total_amount ?? f.amount),
+      term: f.term,
+      year: f.academic_year ?? String(f.year),
+      class_ids: f.class_id ? [String(f.class_id)] : ["__all__"],
+    });
     setOpen(true);
   };
 
+  const toggleClass = (id: string) => {
+    setForm((f) => {
+      if (id === "__all__") return { ...f, class_ids: ["__all__"] };
+      const withoutAll = f.class_ids.filter((x) => x !== "__all__");
+      const has = withoutAll.includes(id);
+      return { ...f, class_ids: has ? withoutAll.filter((x) => x !== id) : [...withoutAll, id] };
+    });
+  };
+
+  const isAllClasses = form.class_ids.length === 0 || form.class_ids.includes("__all__");
+
   const handleSave = async () => {
-    const payload = { ...form, amount: Number(form.amount), year: Number(form.year) };
+    const base = { name: form.name, total_amount: Number(form.amount), term: form.term, academic_year: form.year };
     try {
       if (editing) {
-        await updateFee.mutateAsync({ id: editing.id, ...payload });
+        // editing: one class only (first selected, or null for all)
+        const classId = isAllClasses ? null : Number(form.class_ids[0]);
+        await updateFee.mutateAsync({ id: editing.id, ...base, class_id: classId });
         toast({ title: "Fee updated" });
       } else {
-        await createFee.mutateAsync(payload);
-        toast({ title: "Fee structure created" });
+        if (isAllClasses) {
+          await createFee.mutateAsync({ ...base, class_id: null });
+        } else {
+          await Promise.all(
+            form.class_ids.map((cid) => createFee.mutateAsync({ ...base, class_id: Number(cid) }))
+          );
+        }
+        const count = isAllClasses ? 1 : form.class_ids.length;
+        toast({ title: count > 1 ? `${count} fee structures created` : "Fee structure created" });
       }
       setOpen(false);
     } catch {
@@ -321,7 +348,7 @@ const FeesTab = () => {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-foreground">Fee Structures</h3>
-          <p className="text-sm text-muted-foreground">Set fees per term for each academic year</p>
+          <p className="text-sm text-muted-foreground">Set fees per class, per term</p>
         </div>
         <Button size="sm" onClick={openNew}>
           <Plus className="mr-1.5 h-4 w-4" /> Add Fee
@@ -346,7 +373,14 @@ const FeesTab = () => {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-semibold text-foreground">{f.name}</p>
-                    <p className="text-xs text-muted-foreground">{f.term} Term · {f.year}</p>
+                    <p className="text-xs text-muted-foreground">{f.term} Term · {f.academic_year ?? f.year}</p>
+                    <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      f.class_name
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    }`}>
+                      {f.class_name ?? "All Classes"}
+                    </span>
                   </div>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(f)}>
@@ -362,7 +396,7 @@ const FeesTab = () => {
                     </Button>
                   </div>
                 </div>
-                <p className="mt-2 text-xl font-bold text-foreground">{fmt(f.amount)}</p>
+                <p className="mt-2 text-xl font-bold text-foreground">{fmt(f.total_amount ?? f.amount)}</p>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-accent">
                   <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
                 </div>
@@ -399,6 +433,56 @@ const FeesTab = () => {
                 placeholder="e.g. 120000"
               />
             </div>
+
+            {/* Class multi-select chips */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">
+                Apply to {!editing && "("}Class{!editing && "es)"} *
+              </label>
+              <div className="flex flex-wrap gap-2 rounded-xl border border-input bg-background p-2.5">
+                {/* All Classes chip */}
+                <button
+                  type="button"
+                  onClick={() => toggleClass("__all__")}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                    isAllClasses
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-accent text-accent-foreground hover:bg-accent/80"
+                  }`}
+                >
+                  All Classes
+                </button>
+                {/* Class chips */}
+                {classes.map((c) => {
+                  const active = form.class_ids.includes(String(c.id));
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => toggleClass(String(c.id))}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                        active
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-accent text-accent-foreground hover:bg-accent/80"
+                      }`}
+                    >
+                      {c.name}
+                    </button>
+                  );
+                })}
+              </div>
+              {!editing && !isAllClasses && form.class_ids.length > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  {form.class_ids.length} separate fee structures will be created
+                </p>
+              )}
+              {editing && !isAllClasses && form.class_ids.length > 1 && (
+                <p className="text-xs text-amber-600">
+                  When editing, only the first selected class applies
+                </p>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Term</label>

@@ -20,21 +20,20 @@ const navItems: Record<UserRole, NavItem[]> = {
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Users, label: "Students", path: "/students" },
     { icon: BookOpen, label: "Scores", path: "/scores" },
-    { icon: Calendar, label: "Timetable", path: "/timetable" },
     { icon: User, label: "Profile", path: "/profile" },
   ],
   admin: [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Users, label: "Users", path: "/users" },
+    { icon: BookOpen, label: "Subjects", path: "/subjects" },
     { icon: CreditCard, label: "Finance", path: "/payments" },
-    { icon: BarChart3, label: "Reports", path: "/reports" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ],
   school: [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Users, label: "Students", path: "/students" },
+    { icon: BookOpen, label: "Subjects", path: "/subjects" },
     { icon: CreditCard, label: "Finance", path: "/payments" },
-    { icon: FileClock, label: "Timetable", path: "/timetable" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ],
 };
@@ -45,7 +44,10 @@ const BottomNav = () => {
 
   if (!user) return null;
 
-  const items = navItems[user.role] ?? navItems.admin;
+  const baseItems = navItems[user.role] ?? navItems.admin;
+  const items = user.role === "teacher" && user.can_manage_timetable
+    ? [...baseItems.slice(0, -1), { icon: Calendar, label: "Timetable", path: "/timetable" }, baseItems[baseItems.length - 1]]
+    : baseItems;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card safe-bottom">

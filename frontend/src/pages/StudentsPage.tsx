@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Search, Plus, Upload, Trash2, Pencil, ChevronLeft, ChevronRight, Users, User, BookOpen, Calendar, UserRound, Phone } from "lucide-react";
+import { Search, Plus, Upload, Trash2, Pencil, ChevronLeft, ChevronRight, Users, User, BookOpen, Calendar, UserRound, Phone, ArrowLeft, ChevronRight as ArrowRight, GraduationCap } from "lucide-react";
 import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent, useImportStudents, Student } from "@/hooks/useStudents";
-import { useClasses } from "@/hooks/useClasses";
+import { useClasses, SchoolClass } from "@/hooks/useClasses";
+import { useSubjects } from "@/hooks/useSubjects";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,8 +23,10 @@ const StudentsPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
-  const [classFilter, setClassFilter] = useState("all");
   const [page, setPage] = useState(1);
+
+  // Class drill-down
+  const [selectedClass, setSelectedClass] = useState<SchoolClass | null>(null);
 
   // Add / Edit dialog
   const [open, setOpen] = useState(false);
@@ -35,7 +38,7 @@ const StudentsPage = () => {
 
   const { data, isLoading } = useStudents({
     search: search || undefined,
-    class_id: classFilter !== "all" ? classFilter : undefined,
+    class_id: selectedClass ? String(selectedClass.id) : undefined,
     page,
   });
   const students = data?.data ?? [];
@@ -46,6 +49,12 @@ const StudentsPage = () => {
   const { data: classesData } = useClasses();
   const classes = classesData ?? [];
 
+  // For teachers, only show classes they have subjects in
+  const { data: mySubjects = [] } = useSubjects();
+  const visibleClasses = user?.role === "teacher"
+    ? classes.filter((c) => mySubjects.some((s) => s.class_id === c.id))
+    : classes;
+
   const createStudent = useCreateStudent();
   const updateStudent = useUpdateStudent();
   const deleteStudent = useDeleteStudent();
@@ -55,7 +64,7 @@ const StudentsPage = () => {
 
   const openAdd = () => {
     setEditStudent(null);
-    setForm(EMPTY);
+    setForm({ ...EMPTY, class_id: selectedClass ? String(selectedClass.id) : "" });
     setOpen(true);
   };
 
@@ -110,13 +119,101 @@ const StudentsPage = () => {
     e.target.value = "";
   };
 
+  const handleSelectClass = (c: SchoolClass) => {
+    setSelectedClass(c);
+    setSearch("");
+    setPage(1);
+  };
+
+  const handleBack = () => {
+    setSelectedClass(null);
+    setSearch("");
+    setPage(1);
+  };
+
+  // ── CLASS CARDS VIEW ─────────────────────────────────────────────────────────
+  // Assign a rotating palette of accent colours to each card
+  const cardAccents = [
+    "from-blue-500 to-indigo-600",
+    "from-violet-500 to-purple-600",
+    "from-emerald-500 to-teal-600",
+    "from-orange-400 to-amber-500",
+    "from-rose-400 to-pink-500",
+    "from-cyan-500 to-sky-600",
+  ];
+
+  if (!selectedClass) {
+    return (
+      <div className="animate-fade-in space-y-6">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Students</h1>
+          <p className="text-sm text-muted-foreground">Select a class to view its students</p>
+        </div>
+
+        {visibleClasses.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-16 text-muted-foreground">
+            <Users className="h-12 w-12 opacity-30" />
+            <p>No classes found</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {visibleClasses.map((c, i) => {
+              const accent = cardAccents[i % cardAccents.length];
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => handleSelectClass(c)}
+                  className="group relative overflow-hidden rounded-2xl bg-card shadow-card text-left hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  {/* Gradient top bar */}
+                  <div className={`h-1.5 w-full bg-gradient-to-r ${accent}`} />
+
+                  <div className="p-5">
+                    {/* Icon + count row */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-white shadow-sm`}>
+                        <GraduationCap className="h-5 w-5" />
+                      </div>
+                      <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+                        {c.student_count ?? 0}
+                      </span>
+                    </div>
+
+                    {/* Name */}
+                    <p className="font-bold text-base text-foreground group-hover:text-primary transition-colors leading-tight">
+                      {c.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {c.student_count === 1 ? "1 student" : `${c.student_count ?? 0} students`}
+                    </p>
+
+                    {/* View row */}
+                    <div className="flex items-center gap-1 mt-4 text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                      View students <ArrowRight className="h-3.5 w-3.5" />
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── STUDENTS LIST VIEW ───────────────────────────────────────────────────────
   return (
     <div className="animate-fade-in space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Students</h1>
-          <p className="text-sm text-muted-foreground">{totalStudents} enrolled</p>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={handleBack} className="h-8 w-8 shrink-0">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">{selectedClass.name}</h1>
+            <p className="text-sm text-muted-foreground">{totalStudents} students</p>
+          </div>
         </div>
         {canManage && (
           <div className="flex gap-2">
@@ -133,28 +230,15 @@ const StudentsPage = () => {
         )}
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search students…"
-            className="pl-9"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          />
-        </div>
-        <Select value={classFilter} onValueChange={(v) => { setClassFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="All classes" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All classes</SelectItem>
-            {classes.map((c) => (
-              <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search students…"
+          className="pl-9"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+        />
       </div>
 
       {/* Table / Cards */}
@@ -176,7 +260,6 @@ const StudentsPage = () => {
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Name</th>
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Admission #</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Class</th>
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Gender</th>
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Parent Phones</th>
                   <th className="px-4 py-3 text-right font-semibold text-muted-foreground">Actions</th>
@@ -194,7 +277,6 @@ const StudentsPage = () => {
                       </button>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{s.admission_number}</td>
-                    <td className="px-4 py-3">{s.class?.name ?? "—"}</td>
                     <td className="px-4 py-3 capitalize">{s.gender ?? "—"}</td>
                     <td className="px-4 py-3">
                       {s.parent?.phone || s.parent?.phone2 ? (
@@ -245,7 +327,7 @@ const StudentsPage = () => {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-semibold text-foreground">{s.name}</p>
-                    <p className="text-xs text-muted-foreground">{s.admission_number} · {s.class?.name ?? "—"}</p>
+                    <p className="text-xs text-muted-foreground">{s.admission_number}</p>
                     <span className="mt-1 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary capitalize">
                       {s.gender ?? "—"}
                     </span>
@@ -378,7 +460,7 @@ const StudentsPage = () => {
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium">Email <span className="text-muted-foreground font-normal">(optional)</span></label>
-                <Input type="email" value={form.parent_email} onChange={(e) => setForm({ ...form, parent_email: e.target.value })} placeholder="Auto-generated" />
+                <Input type="email" value={form.parent_email} onChange={(e) => setForm({ ...form, parent_email: e.target.value })} placeholder="Email" />
               </div>
               <p className="text-[11px] text-muted-foreground">Portal login will be created automatically with password <strong>Parent123</strong>.</p>
             </div>

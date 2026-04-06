@@ -19,7 +19,8 @@ class FeeStructureController extends Controller
 
     public function index(Request $request)
     {
-        $structures = FeeStructure::where('school_id', $this->schoolId($request))
+        $structures = FeeStructure::with('schoolClass')
+            ->where('school_id', $this->schoolId($request))
             ->orderByDesc('created_at')
             ->get();
 
@@ -37,13 +38,13 @@ class FeeStructureController extends Controller
         $data['school_id'] = $this->schoolId($request);
 
         $structure = FeeStructure::create($data);
-        return new FeeStructureResource($structure);
+        return new FeeStructureResource($structure->load('schoolClass'));
     }
 
     public function update(StoreFeeStructureRequest $request, FeeStructure $feeStructure)
     {
         $feeStructure->update($request->validated());
-        return new FeeStructureResource($feeStructure);
+        return new FeeStructureResource($feeStructure->load('schoolClass'));
     }
 
     public function destroy(FeeStructure $feeStructure)

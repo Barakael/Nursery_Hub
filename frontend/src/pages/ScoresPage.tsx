@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useSubjects } from "@/hooks/useSubjects";
 import { useScoresBySubject, useUpsertScore } from "@/hooks/useScores";
 import { useStudents } from "@/hooks/useStudents";
@@ -16,9 +17,10 @@ const YEAR = new Date().getFullYear();
 const ScoresPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
 
   const { data: subjects = [] } = useSubjects();
-  const [subjectId, setSubjectId] = useState("");
+  const [subjectId, setSubjectId] = useState(searchParams.get("subject") ?? "");
   const [term, setTerm] = useState("First");
   const [year] = useState(YEAR);
 

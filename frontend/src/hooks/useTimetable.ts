@@ -4,14 +4,14 @@ import api from "@/services/api";
 export interface TimetableSlot {
   id: number;
   school_id: number;
-  class_id: number;
-  class_name?: string;
-  day: string;
-  start_time: string;
-  end_time: string;
-  subject?: string;
-  type: "lesson" | "break" | "meal" | "activity";
-  teacher_name?: string;
+  class_id?: number | null;
+  type: "subject" | "meal";
+  day_of_week: string;
+  time_start?: string;
+  time_end?: string;
+  title: string;
+  description?: string;
+  class?: { id: number; name: string };
 }
 
 interface TimetableParams {

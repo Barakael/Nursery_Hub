@@ -29,14 +29,23 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('schools', SchoolController::class)
             ->middleware('role:admin');
 
-        // Classes (admin, school)
-        Route::apiResource('classes', ClassController::class)
-            ->middleware('role:admin,school');
-
-        // Students (admin, school)
+        // Classes — teachers can read; admin/school can write
+        Route::get('classes',          [ClassController::class, 'index'])->middleware('role:admin,school,teacher');
+        Route::get('classes/{class}',  [ClassController::class, 'show'])->middleware('role:admin,school,teacher');
         Route::middleware('role:admin,school')->group(function () {
-            Route::apiResource('students', StudentController::class);
-            Route::post('students/import', [StudentController::class, 'import']);
+            Route::post('classes',            [ClassController::class, 'store']);
+            Route::put('classes/{class}',     [ClassController::class, 'update']);
+            Route::delete('classes/{class}',  [ClassController::class, 'destroy']);
+        });
+
+        // Students — teachers can read; admin/school can write
+        Route::get('students',        [StudentController::class, 'index'])->middleware('role:admin,school,teacher');
+        Route::get('students/{student}', [StudentController::class, 'show'])->middleware('role:admin,school,teacher');
+        Route::middleware('role:admin,school')->group(function () {
+            Route::post('students',            [StudentController::class, 'store']);
+            Route::put('students/{student}',   [StudentController::class, 'update']);
+            Route::delete('students/{student}',[StudentController::class, 'destroy']);
+            Route::post('students/import',     [StudentController::class, 'import']);
         });
 
         // Users — manage teachers & parents (admin, school)
@@ -81,7 +90,7 @@ Route::prefix('v1')->group(function () {
 
         // Timetable
         Route::get('timetable',                [TimetableController::class, 'index']);
-        Route::middleware('role:admin,school')->group(function () {
+        Route::middleware('role:admin,school,teacher')->group(function () {
             Route::post('timetable',           [TimetableController::class, 'store']);
             Route::put('timetable/{slot}',     [TimetableController::class, 'update']);
             Route::delete('timetable/{slot}',  [TimetableController::class, 'destroy']);

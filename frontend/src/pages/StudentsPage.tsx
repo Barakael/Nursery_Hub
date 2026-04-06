@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
-const EMPTY = { name: "", admission_number: "", class_id: "", dob: "", gender: "" };
+const EMPTY = { name: "", admission_number: "", class_id: "", dob: "", gender: "", parent_name: "", parent_phone: "", parent_phone2: "", parent_email: "" };
 
 const StudentsPage = () => {
   const { user } = useAuth();
@@ -67,6 +67,10 @@ const StudentsPage = () => {
       class_id: String(s.class_id),
       dob: s.dob ?? "",
       gender: s.gender ?? "",
+      parent_name: s.parent?.name ?? "",
+      parent_phone: s.parent?.phone ?? "",
+      parent_phone2: s.parent?.phone2 ?? "",
+      parent_email: s.parent?.email ?? "",
     });
     setOpen(true);
   };
@@ -174,6 +178,7 @@ const StudentsPage = () => {
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Admission #</th>
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Class</th>
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Gender</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Parent Phones</th>
                   <th className="px-4 py-3 text-right font-semibold text-muted-foreground">Actions</th>
                 </tr>
               </thead>
@@ -191,6 +196,14 @@ const StudentsPage = () => {
                     <td className="px-4 py-3 text-muted-foreground">{s.admission_number}</td>
                     <td className="px-4 py-3">{s.class?.name ?? "—"}</td>
                     <td className="px-4 py-3 capitalize">{s.gender ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      {s.parent?.phone || s.parent?.phone2 ? (
+                        <div className="space-y-0.5">
+                          {s.parent.phone && <p className="text-xs text-muted-foreground">{s.parent.phone}</p>}
+                          {s.parent.phone2 && <p className="text-xs text-muted-foreground opacity-70">{s.parent.phone2}</p>}
+                        </div>
+                      ) : <span className="text-muted-foreground">—</span>}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
                         {canManage && (
@@ -316,8 +329,8 @@ const StudentsPage = () => {
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Emma Johnson" />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Admission Number *</label>
-              <Input value={form.admission_number} onChange={(e) => setForm({ ...form, admission_number: e.target.value })} placeholder="e.g. ADM-2026-001" />
+              <label className="text-sm font-medium">Admission Number</label>
+              <Input value={form.admission_number} onChange={(e) => setForm({ ...form, admission_number: e.target.value })} placeholder="Auto-generated if blank" />
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Class *</label>
@@ -346,12 +359,35 @@ const StudentsPage = () => {
                 </Select>
               </div>
             </div>
+            {/* Parent / Guardian */}
+            <div className="rounded-xl border border-dashed border-border p-3 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Parent / Guardian</p>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Name</label>
+                <Input value={form.parent_name} onChange={(e) => setForm({ ...form, parent_name: e.target.value })} placeholder="e.g. John Johnson" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Phone 1</label>
+                  <Input value={form.parent_phone} onChange={(e) => setForm({ ...form, parent_phone: e.target.value })} placeholder="e.g. +255712…" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Phone 2 <span className="text-muted-foreground font-normal">(emergency)</span></label>
+                  <Input value={form.parent_phone2} onChange={(e) => setForm({ ...form, parent_phone2: e.target.value })} placeholder="e.g. +255756…" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Email <span className="text-muted-foreground font-normal">(optional)</span></label>
+                <Input type="email" value={form.parent_email} onChange={(e) => setForm({ ...form, parent_email: e.target.value })} placeholder="Auto-generated" />
+              </div>
+              <p className="text-[11px] text-muted-foreground">Portal login will be created automatically with password <strong>Parent123</strong>.</p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button
               onClick={handleSave}
-              disabled={!form.name || !form.admission_number || !form.class_id || createStudent.isPending || updateStudent.isPending}
+              disabled={!form.name || !form.class_id || createStudent.isPending || updateStudent.isPending}
             >
               {(createStudent.isPending || updateStudent.isPending) ? "Saving…" : editStudent ? "Save Changes" : "Add Student"}
             </Button>
@@ -409,8 +445,15 @@ const StudentsPage = () => {
                     {viewStudent.parent.phone && (
                       <div className="flex items-center gap-3 text-sm">
                         <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <span className="text-muted-foreground">Phone</span>
+                        <span className="text-muted-foreground">Phone 1</span>
                         <span className="ml-auto font-medium">{viewStudent.parent.phone}</span>
+                      </div>
+                    )}
+                    {viewStudent.parent.phone2 && (
+                      <div className="flex items-center gap-3 text-sm">
+                        <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground">Phone 2</span>
+                        <span className="ml-auto font-medium">{viewStudent.parent.phone2}</span>
                       </div>
                     )}
                   </div>

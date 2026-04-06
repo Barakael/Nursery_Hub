@@ -20,12 +20,12 @@ const navItems: Record<UserRole, NavItem[]> = {
     { icon: Home, label: "Dashboard", path: "/dashboard" },
     { icon: Users, label: "Students", path: "/students" },
     { icon: BookOpen, label: "Scores", path: "/scores" },
-    { icon: Calendar, label: "Timetable", path: "/timetable" },
     { icon: User, label: "Profile", path: "/profile" },
   ],
   admin: [
     { icon: Home, label: "Dashboard", path: "/dashboard" },
     { icon: Users, label: "Users", path: "/users" },
+    { icon: BookOpen, label: "Subjects", path: "/subjects" },
     { icon: CreditCard, label: "Finance", path: "/payments" },
     { icon: BarChart3, label: "Reports", path: "/reports" },
     { icon: Settings, label: "Settings", path: "/settings" },
@@ -33,7 +33,7 @@ const navItems: Record<UserRole, NavItem[]> = {
   school: [
     { icon: Home, label: "Dashboard", path: "/dashboard" },
     { icon: Users, label: "Students", path: "/students" },
-  
+    { icon: BookOpen, label: "Subjects", path: "/subjects" },
     { icon: CreditCard, label: "Finance", path: "/payments" },
     { icon: Calendar, label: "Timetable", path: "/timetable" },
     { icon: User, label: "Staffs", path: "/users" },
@@ -47,7 +47,10 @@ const SidebarNav = () => {
 
   if (!user) return null;
 
-  const items = navItems[user.role] ?? navItems.admin;
+  const baseItems = navItems[user.role] ?? navItems.admin;
+  const items = user.role === "teacher" && user.can_manage_timetable
+    ? [...baseItems.slice(0, -1), { icon: Calendar, label: "Timetable", path: "/timetable" }, baseItems[baseItems.length - 1]]
+    : baseItems;
 
   return (
     <div className="flex h-full flex-col bg-sidebar border-r border-sidebar-border">

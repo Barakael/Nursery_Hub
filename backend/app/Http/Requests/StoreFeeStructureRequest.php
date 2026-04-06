@@ -17,6 +17,7 @@ class StoreFeeStructureRequest extends FormRequest
             'academic_year' => ['nullable', 'string', 'max:10'],
             'due_date'      => ['nullable', 'date'],
             'is_active'     => ['nullable', 'boolean'],
+            'class_id'      => ['nullable', 'exists:classes,id'],
         ];
     }
 }

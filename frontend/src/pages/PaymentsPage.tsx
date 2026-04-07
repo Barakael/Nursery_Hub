@@ -542,19 +542,20 @@ const StaffFinanceView = () => {
 
 // ── Parent view ──────────────────────────────────────────────────────────────
 const ParentFinanceView = () => {
-  const { data: studentsData } = useStudents();
-  const students = studentsData?.data ?? [];
-  const firstStudent = students[0];
+  const { user } = useAuth();
+  const children = user?.children ?? [];
+  const [selectedChildId, setSelectedChildId] = useState<number>(children[0]?.id ?? 0);
+  const child = children.find((c) => c.id === selectedChildId) ?? children[0];
 
-  const { data: balance } = useStudentBalance(firstStudent?.id ?? 0);
-  const { data: payments = [] } = useStudentPayments(firstStudent?.id ?? 0);
+  const { data: balance } = useStudentBalance(child?.id ?? 0);
+  const { data: payments = [] } = useStudentPayments(child?.id ?? 0);
 
   const totalFee = balance?.total ?? 0;
   const totalPaid = balance?.paid ?? 0;
   const remaining = balance?.remaining ?? 0;
   const percent = balance?.percent ?? 0;
 
-  if (!firstStudent) {
+  if (!child) {
     return (
       <div className="flex flex-col items-center gap-3 py-24 text-muted-foreground animate-fade-in">
         <AlertCircle className="h-10 w-10 opacity-30" />
@@ -565,9 +566,24 @@ const ParentFinanceView = () => {
 
   return (
     <div className="animate-fade-in space-y-6">
+      {/* Child selector */}
+      {children.length > 1 && (
+        <div className="rounded-2xl bg-card p-4 shadow-card space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Select Child</label>
+          <Select value={String(selectedChildId)} onValueChange={(v) => setSelectedChildId(Number(v))}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {children.map((c) => (
+                <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <div className="rounded-2xl bg-primary p-5 shadow-card">
         <p className="text-sm font-medium text-primary-foreground/70">
-          {firstStudent.name} — Total Fees
+          {child.name} — Total Fees
         </p>
         <p className="text-3xl font-extrabold text-primary-foreground">{fmt(totalFee)}</p>
         {balance?.structure && (

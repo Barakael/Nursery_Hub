@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend,
 } from "recharts";
-import { useOverviewReport, useClassReport } from "@/hooks/useReports";
+import { useOverviewReport, useClassReport, useClassStudentScores } from "@/hooks/useReports";
 import { useClasses } from "@/hooks/useClasses";
 import { useSubjects } from "@/hooks/useSubjects";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +14,7 @@ import { useStudentPayments, useStudentBalance } from "@/hooks/usePayments";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Users, GraduationCap, TrendingUp, Wallet, BookOpen, Calendar, CreditCard, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Users, GraduationCap, TrendingUp, Wallet, BookOpen, Calendar, CreditCard, CheckCircle2, Clock, AlertCircle, FileDown } from "lucide-react";
 
 const COLORS = [
   "#020884ef", // blue
@@ -298,67 +298,76 @@ const StatCard = ({
   </div>
 );
 
-const ReportsPage = () => {
-  const [view, setView] = useState<"overview" | "class">("overview");
-  const [classId, setClassId] = useState("");
-
-  const { user } = useAuth();
+// ── Teacher view ────────────────────────────────────────────────────────────
+const TeacherReportsView = () => {
   const navigate = useNavigate();
   const { data: mySubjects = [] } = useSubjects();
+  return (
+    <div className="animate-fade-in space-y-5">
+      <div>
+        <h1 className="text-xl font-bold text-foreground">My Dashboard</h1>
+        <p className="text-sm text-muted-foreground">Your assigned subjects</p>
+      </div>
+      {mySubjects.length === 0 ? (
+        <div className="rounded-2xl bg-card p-8 text-center shadow-card">
+          <BookOpen className="mx-auto mb-3 h-10 w-10 opacity-20 text-muted-foreground" />
+          <p className="font-medium text-muted-foreground">No subjects assigned yet</p>
+          <p className="mt-1 text-xs text-muted-foreground">Ask the school manager to assign subjects to you.</p>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {mySubjects.map((s) => (
+            <div key={s.id} className="rounded-2xl bg-card p-5 shadow-card">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-bold text-foreground">{s.name}</p>
+                  {s.class_name && (
+                    <span className="mt-0.5 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      {s.class_name}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => navigate(`/scores?subject=${s.id}`)}
+                className="mt-4 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground transition hover:opacity-90"
+              >
+                Enter Scores →
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
+// ── Admin / School Reports view ───────────────────────────────────────────────
+const TERMS_LIST = ["First", "Second", "Third"];
+
+function gradeColorStaff(pct: number | null) {
+  if (pct === null) return "text-muted-foreground";
+  if (pct >= 90) return "text-green-600";
+  if (pct >= 70) return "text-primary";
+  if (pct >= 50) return "text-yellow-600";
+  return "text-destructive";
+}
+
+const StaffReportsView = () => {
+  const [searchParams] = useSearchParams();
+  const isAcademics = searchParams.get("tab") === "academics";
+  const [classId, setClassId] = useState("");
+  const [term, setTerm] = useState("");
   const { data: overview, isLoading: loadingOverview } = useOverviewReport();
   const { data: classes = [] } = useClasses();
-
   const { data: classReport, isLoading: loadingClass } = useClassReport(Number(classId));
-
-  // ── Parent view ───────────────────────────────────────────────────────────
-  if (user?.role === "parent") return <ParentDashboard />;
-
-  // ── Teacher view ──────────────────────────────────────────────────────────
-  if (user?.role === "teacher") {
-    return (
-      <div className="animate-fade-in space-y-5">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">My Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Your assigned subjects</p>
-        </div>
-        {mySubjects.length === 0 ? (
-          <div className="rounded-2xl bg-card p-8 text-center shadow-card">
-            <BookOpen className="mx-auto mb-3 h-10 w-10 opacity-20 text-muted-foreground" />
-            <p className="font-medium text-muted-foreground">No subjects assigned yet</p>
-            <p className="mt-1 text-xs text-muted-foreground">Ask the school manager to assign subjects to you.</p>
-          </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {mySubjects.map((s) => (
-              <div key={s.id} className="rounded-2xl bg-card p-5 shadow-card">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-bold text-foreground">{s.name}</p>
-                    {s.class_name && (
-                      <span className="mt-0.5 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                        {s.class_name}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigate(`/scores?subject=${s.id}`)}
-                  className="mt-4 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground transition hover:opacity-90"
-                >
-                  Enter Scores →
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-  // ── End teacher view ──────────────────────────────────────────────────────
+  const { data: classScores, isLoading: loadingScores } = useClassStudentScores(
+    Number(classId),
+    term ? { term } : undefined,
+  );
 
   const pieData = overview
     ? [
@@ -367,31 +376,40 @@ const ReportsPage = () => {
       ]
     : [];
 
-  return (
-    <div className="animate-fade-in space-y-6">
-      {/* View Switcher */}
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Reports</h1>
-        <div className="mt-3 flex gap-1 rounded-2xl bg-card p-1.5 shadow-soft">
-          {(["overview", "class"] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-all capitalize ${
-                view === v
-                  ? "bg-primary text-primary-foreground shadow"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {v}
-            </button>
-          ))}
-        </div>
-      </div>
+  const handleExportPDF = () => {
+    if (!classScores) return;
+    const subjects = classScores.subjects;
+    const headerCells = subjects.map((s) => `<th>${s.name}</th>`).join("");
+    const rows = classScores.students.map((st) => {
+      const cells = subjects.map((s) => {
+        const sc = st.subjects.find((x) => x.subject_id === s.id);
+        return `<td>${sc?.score != null ? `${sc.score}/${sc.max_score}` : "—"}</td>`;
+      }).join("");
+      const avgCell = st.avg_percent != null ? `${st.avg_percent}%` : "—";
+      return `<tr><td>${st.name}</td><td>${st.admission_number ?? ""}</td>${cells}<td><b>${avgCell}</b></td></tr>`;
+    }).join("");
+    const termLabel = term ? `${term} Term · ` : "";
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${classScores.class_name} – Academics</title>
+<style>body{font-family:sans-serif;padding:20px}h1{font-size:17px;margin-bottom:4px}p{color:#555;margin:0 0 14px;font-size:13px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ddd;padding:6px 10px;text-align:left}th{background:#f0f4ff;font-weight:600}tr:nth-child(even){background:#fafafa}</style>
+</head><body>
+<h1>${classScores.class_name} — Student Score Sheet</h1>
+<p>${termLabel}${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</p>
+<table><thead><tr><th>Student</th><th>Adm #</th>${headerCells}<th>Avg %</th></tr></thead><tbody>${rows}</tbody></table>
+</body></html>`;
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 400);
+  };
 
+  return (
+    <div className="animate-fade-in space-y-6 pb-20">
       {/* ── OVERVIEW ── */}
-      {view === "overview" && (
+      {!isAcademics && (
         <>
+          <h1 className="text-xl font-bold text-foreground">Reports</h1>
           {loadingOverview ? (
             <div className="flex justify-center py-16">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -409,20 +427,13 @@ const ReportsPage = () => {
                 </div>
               </div>
 
-              {/* ── Enrollment by Class + Fee Collection (side by side) ── */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-              {/* Enrolled Students by Class */}
               {(overview.enrollment_by_class?.length ?? 0) > 0 && (
                 <div className="rounded-2xl bg-card p-5 shadow-card">
                   <h3 className="mb-4 font-bold text-foreground">Enrolled Students by Class</h3>
                   <div className="mx-auto max-w-xs">
                   <ResponsiveContainer width="100%" height={200}>
-                    <BarChart
-                      data={overview.enrollment_by_class}
-                      margin={{ top: 0, right: 8, left: -20, bottom: 0 }}
-                      barCategoryGap="30%"
-                    >
+                    <BarChart data={overview.enrollment_by_class} margin={{ top: 0, right: 8, left: -20, bottom: 0 }} barCategoryGap="30%">
                       <XAxis dataKey="class_name" tick={{ fontSize: 11 }} />
                       <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                       <Tooltip />
@@ -436,11 +447,7 @@ const ReportsPage = () => {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {overview.enrollment_by_class.map((c, i) => (
-                      <span
-                        key={c.class_name}
-                        className="flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-semibold text-white"
-                        style={{ backgroundColor: COLORS[i % COLORS.length] }}
-                      >
+                      <span key={c.class_name} className="flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-semibold text-white" style={{ backgroundColor: COLORS[i % COLORS.length] }}>
                         {c.class_name}: {c.student_count}
                       </span>
                     ))}
@@ -448,21 +455,12 @@ const ReportsPage = () => {
                 </div>
               )}
 
-              {/* Fee Collection */}
               {overview.total_fees > 0 && (
                 <div className="rounded-2xl bg-card p-5 shadow-card">
                   <h3 className="mb-4 font-bold text-foreground">Fee Collection</h3>
                   <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={55}
-                        outerRadius={85}
-                        dataKey="value"
-                        paddingAngle={3}
-                      >
+                      <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" paddingAngle={3}>
                         {pieData.map((_, i) => (
                           <Cell key={i} fill={i === 0 ? "#15803d" : "#eab308"} />
                         ))}
@@ -483,67 +481,169 @@ const ReportsPage = () => {
                   </div>
                 </div>
               )}
-
               </div>
-
-              {/* Per-student
-              {overview.students?.length > 0 && ()} */}
-
-              {/* ── Payment Status Breakdown ── (commented) */}
-
             </>
           ) : null}
         </>
       )}
 
-      {/* ── CLASS REPORT ── */}
-      {view === "class" && (
-        <>
-          <Select value={classId} onValueChange={setClassId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a class…" />
-            </SelectTrigger>
-            <SelectContent>
-              {classes.map((c) => (
-                <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* ── ACADEMICS ── */}
+      {isAcademics && (
+        <div className="space-y-4">
+          {/* Class cards + Term pills */}
+          <div className="space-y-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Select a class</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {classes.map((c, i) => {
+                const selected = classId === String(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setClassId(String(c.id))}
+                    className={`relative rounded-2xl p-4 text-left transition-all shadow-card ${
+                      selected
+                        ? "ring-2 ring-primary bg-primary text-primary-foreground"
+                        : "bg-card text-foreground hover:ring-2 hover:ring-primary/40"
+                    }`}
+                  >
+                    <div
+                      className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold"
+                      style={{ backgroundColor: selected ? "rgba(255,255,255,0.2)" : `${COLORS[i % COLORS.length]}22`, color: selected ? "#fff" : COLORS[i % COLORS.length] }}
+                    >
+                      {c.name.charAt(0).toUpperCase()}
+                    </div>
+                    <p className="text-sm font-semibold leading-tight">{c.name}</p>
+                  </button>
+                );
+              })}
+            </div>
 
-          {loadingClass && (
-            <div className="flex justify-center py-12">
+            {/* Term pills */}
+            <div className="flex flex-wrap gap-2 pt-1">
+              {(["all", ...TERMS_LIST] as const).map((t) => {
+                const active = t === "all" ? term === "" : term === t;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setTerm(t === "all" ? "" : t)}
+                    className={`rounded-xl px-4 py-1.5 text-xs font-semibold transition-all ${
+                      active
+                        ? "bg-primary text-primary-foreground shadow"
+                        : "bg-card text-muted-foreground hover:text-foreground shadow-card"
+                    }`}
+                  >
+                    {t === "all" ? "All Terms" : `${t} Term`}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {!classId && (
+            <div className="rounded-2xl bg-card p-10 text-center shadow-card">
+              <GraduationCap className="mx-auto h-10 w-10 opacity-20 mb-3" />
+              <p className="text-sm text-muted-foreground">Select a class to view academic performance</p>
+            </div>
+          )}
+
+          {classId && (loadingClass || loadingScores) && (
+            <div className="flex justify-center py-16">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
           )}
 
+          {/* Subject averages chart */}
           {classReport && !loadingClass && (
             <div className="rounded-2xl bg-card p-5 shadow-card">
-              <h3 className="mb-4 font-bold text-foreground">{classReport.class_name} — Subject Averages</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-foreground">{classReport.class_name} — Subject Averages</h3>
+                {classReport.overall_avg != null && (
+                  <span className="rounded-lg bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
+                    Avg {classReport.overall_avg}%
+                  </span>
+                )}
+              </div>
               {classReport.subjects?.length > 0 ? (
                 <div className="mx-auto max-w-sm">
-                <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={classReport.subjects} margin={{ top: 0, right: 8, left: -20, bottom: 0 }} barCategoryGap="30%">
-                    <XAxis dataKey="subject_name" tick={{ fontSize: 11 }} />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Bar dataKey="avg_score" name="Average" radius={[6, 6, 0, 0]} maxBarSize={40}>
-                      {classReport.subjects.map((_, i) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={classReport.subjects} margin={{ top: 0, right: 8, left: -20, bottom: 0 }} barCategoryGap="30%">
+                      <XAxis dataKey="subject_name" tick={{ fontSize: 11 }} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Bar dataKey="avg_score" name="Avg Score" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                        {classReport.subjects.map((_, i) => (
+                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">No scores recorded yet.</p>
               )}
             </div>
           )}
-        </>
+
+          {/* Per-student performance */}
+          {classScores && !loadingScores && classScores.students.length > 0 && (
+            <div className="rounded-2xl bg-card p-5 shadow-card">
+              <h3 className="mb-4 font-bold text-foreground">Student Performance</h3>
+              <div className="space-y-2">
+                {classScores.students.map((s) => (
+                  <div key={s.id} className="rounded-xl bg-accent/40 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-bold text-primary text-sm">
+                        {s.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold text-sm text-foreground truncate">{s.name}</p>
+                          <span className={`ml-2 shrink-0 text-sm font-bold ${gradeColorStaff(s.avg_percent)}`}>
+                            {s.avg_percent != null ? `${s.avg_percent}%` : "—"}
+                          </span>
+                        </div>
+                        {s.avg_percent != null && (
+                          <div className="mt-1 h-1.5 w-full rounded-full bg-background overflow-hidden">
+                            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${s.avg_percent}%` }} />
+                          </div>
+                        )}
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {s.subjects.filter((x) => x.score != null).map((x) => (
+                            <span key={x.subject_id} className="rounded-md bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                              {x.subject_name}: {x.score}/{x.max_score}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
+      {/* ── PDF download FAB ── only visible in Academics tab with a class selected */}
+      {isAcademics && !!classId && !!classScores && (
+        <button
+          onClick={handleExportPDF}
+          className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-elevated transition hover:opacity-90 active:scale-95 md:bottom-6"
+          title="Download PDF"
+        >
+          <FileDown className="h-5 w-5" />
+          <span>Export PDF</span>
+        </button>
+      )}
     </div>
   );
+};
+
+const ReportsPage = () => {
+  const { user } = useAuth();
+  if (user?.role === "parent")  return <ParentDashboard />;
+  if (user?.role === "teacher") return <TeacherReportsView />;
+  return <StaffReportsView />;
 };
 
 export default ReportsPage;

@@ -67,6 +67,36 @@ export interface StudentReport {
   };
 }
 
+export interface ClassStudentScores {
+  class_id: number;
+  class_name: string;
+  subjects: Array<{ id: number; name: string }>;
+  students: Array<{
+    id: number;
+    name: string;
+    admission_number: string;
+    avg_percent: number | null;
+    subjects: Array<{
+      subject_id: number;
+      subject_name: string;
+      score: number | null;
+      max_score: number;
+      grade: string | null;
+      percent: number | null;
+    }>;
+  }>;
+}
+
+export const useClassStudentScores = (classId: number, params?: { term?: string; academic_year?: string }) =>
+  useQuery({
+    queryKey: ["reports", "class", classId, "scores", params],
+    queryFn: () =>
+      api
+        .get(`/v1/reports/class/${classId}/scores`, { params })
+        .then((r) => r.data as ClassStudentScores),
+    enabled: !!classId,
+  });
+
 export const useOverviewReport = () =>
   useQuery({
     queryKey: ["reports", "overview"],

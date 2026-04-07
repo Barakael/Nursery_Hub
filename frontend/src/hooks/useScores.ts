@@ -4,20 +4,21 @@ import api from "@/services/api";
 export interface Score {
   id: number;
   student_id: number;
-  student_name?: string;
   subject_id: number;
-  subject_name?: string;
   score: number;
   max_score: number;
   term: string;
-  year: number;
+  academic_year: string;
   percentage?: number;
   grade?: string;
+  student?: { id: number; name: string };
+  subject?: { id: number; name: string };
+  recorded_at?: string;
 }
 
 interface ScoreParams {
   term?: string;
-  year?: number;
+  academic_year?: string;
 }
 
 export const useScoresByStudent = (studentId: number, params?: ScoreParams) =>

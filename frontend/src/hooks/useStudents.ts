@@ -22,10 +22,11 @@ interface StudentsParams {
   per_page?: number;
 }
 
-export const useStudents = (params?: StudentsParams) =>
+export const useStudents = (params?: StudentsParams, options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: ["students", params],
     queryFn: () => api.get("/v1/students", { params }).then((r) => r.data),
+    enabled: options?.enabled ?? true,
   });
 
 export const useStudent = (id: number) =>

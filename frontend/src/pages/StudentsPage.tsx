@@ -60,7 +60,7 @@ const StudentsPage = () => {
   const deleteStudent = useDeleteStudent();
   const importStudents = useImportStudents();
 
-  const canManage = user?.role !== "parent";
+  const canManage = user?.role === "admin" || user?.role === "school";
 
   const openAdd = () => {
     setEditStudent(null);
@@ -132,16 +132,6 @@ const StudentsPage = () => {
   };
 
   // ── CLASS CARDS VIEW ─────────────────────────────────────────────────────────
-  // Assign a rotating palette of accent colours to each card
-  const cardAccents = [
-    "from-blue-500 to-indigo-600",
-    "from-violet-500 to-purple-600",
-    "from-emerald-500 to-teal-600",
-    "from-orange-400 to-amber-500",
-    "from-rose-400 to-pink-500",
-    "from-cyan-500 to-sky-600",
-  ];
-
   if (!selectedClass) {
     return (
       <div className="animate-fade-in space-y-6">
@@ -156,45 +146,32 @@ const StudentsPage = () => {
             <p>No classes found</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {visibleClasses.map((c, i) => {
-              const accent = cardAccents[i % cardAccents.length];
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => handleSelectClass(c)}
-                  className="group relative overflow-hidden rounded-2xl bg-card shadow-card text-left hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-                >
-                  {/* Gradient top bar */}
-                  <div className={`h-1.5 w-full bg-gradient-to-r ${accent}`} />
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {visibleClasses.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => handleSelectClass(c)}
+                className="group relative overflow-hidden rounded-xl bg-card shadow-card text-left hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+              >
+                {/* Top bar */}
+                <div className="h-1.5 w-full bg-primary" />
 
-                  <div className="p-5">
-                    {/* Icon + count row */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-white shadow-sm`}>
-                        <GraduationCap className="h-5 w-5" />
-                      </div>
-                      <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
-                        {c.student_count ?? 0}
-                      </span>
-                    </div>
-
-                    {/* Name */}
-                    <p className="font-bold text-base text-foreground group-hover:text-primary transition-colors leading-tight">
+                <div className="flex items-center gap-3 px-3 py-3 mb-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                    <GraduationCap className="h-6 w-6" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-md text-foreground group-hover:text-primary transition-colors truncate leading-tight">
                       {c.name}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {c.student_count === 1 ? "1 student" : `${c.student_count ?? 0} students`}
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {c.student_count ?? 0} students
                     </p>
-
-                    {/* View row */}
-                    <div className="flex items-center gap-1 mt-4 text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                      View students <ArrowRight className="h-3.5 w-3.5" />
-                    </div>
                   </div>
-                </button>
-              );
-            })}
+                  <ArrowRight className="h-5 w-5 shrink-0 text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                </div>
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -262,7 +239,7 @@ const StudentsPage = () => {
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Admission #</th>
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Gender</th>
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Parent Phones</th>
-                  <th className="px-4 py-3 text-right font-semibold text-muted-foreground">Actions</th>
+                  {canManage && <th className="px-4 py-3 text-right font-semibold text-muted-foreground">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -286,9 +263,9 @@ const StudentsPage = () => {
                         </div>
                       ) : <span className="text-muted-foreground">—</span>}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {canManage && (
+                    {canManage && (
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -297,8 +274,6 @@ const StudentsPage = () => {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                        )}
-                        {canManage && (
                           <Button
                             variant="ghost"
                             size="icon"
@@ -307,9 +282,9 @@ const StudentsPage = () => {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        )}
-                      </div>
-                    </td>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -321,37 +296,61 @@ const StudentsPage = () => {
             {students.map((s) => (
               <div
                 key={s.id}
-                className="rounded-2xl bg-card p-4 shadow-soft cursor-pointer hover:shadow-md transition-shadow"
+                className="rounded-2xl bg-card shadow-card overflow-hidden cursor-pointer active:scale-[0.99] transition-all"
                 onClick={() => setViewStudent(s)}
               >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold text-foreground">{s.name}</p>
-                    <p className="text-xs text-muted-foreground">{s.admission_number}</p>
-                    <span className="mt-1 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary capitalize">
-                      {s.gender ?? "—"}
-                    </span>
-                  </div>
-                  {canManage && (
-                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEdit(s)}
-                        className="h-8 w-8 shrink-0 text-muted-foreground"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(s.id)}
-                        className="h-8 w-8 shrink-0 text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                <div className="flex items-stretch">
+                  {/* Colour sidebar */}
+                  <div className="w-1 shrink-0 bg-primary rounded-l-2xl" />
+
+                  <div className="flex flex-1 items-center gap-3 px-4 py-3.5">
+                    {/* Avatar */}
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm">
+                      {s.name.charAt(0).toUpperCase()}
                     </div>
-                  )}
+
+                    {/* Main info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground truncate">{s.name}</p>
+                      <p className="text-xs text-muted-foreground">{s.admission_number}</p>
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        {s.gender && (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary capitalize">
+                            {s.gender}
+                          </span>
+                        )}
+                        {s.parent?.phone && (
+                          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                            <Phone className="h-3 w-3" />{s.parent.phone}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action buttons or chevron */}
+                    {canManage ? (
+                      <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEdit(s)}
+                          className="h-8 w-8 text-muted-foreground"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(s.id)}
+                          className="h-8 w-8 text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

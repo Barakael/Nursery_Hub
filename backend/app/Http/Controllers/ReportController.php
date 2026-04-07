@@ -145,6 +145,58 @@ class ReportController extends Controller
         ]);
     }
 
+    public function classStudentScores(SchoolClass $schoolClass, Request $request)
+    {
+        $term          = $request->query('term');
+        $academicYear  = $request->query('academic_year');
+
+        $subjects = $schoolClass->subjects()->orderBy('name')->get();
+        $students = Student::where('class_id', $schoolClass->id)->orderBy('name')->get();
+
+        $scoresQuery = Score::with('subject')
+            ->whereIn('student_id', $students->pluck('id'))
+            ->whereIn('subject_id', $subjects->pluck('id'));
+
+        if ($term)         $scoresQuery->where('term', $term);
+        if ($academicYear) $scoresQuery->where('academic_year', $academicYear);
+
+        $allScores = $scoresQuery->get()->groupBy('student_id');
+
+        $studentRows = $students->map(function ($student) use ($allScores, $subjects) {
+            $studentScores = $allScores->get($student->id, collect());
+
+            $subjectScores = $subjects->map(function ($subject) use ($studentScores) {
+                $sc = $studentScores->firstWhere('subject_id', $subject->id);
+                return [
+                    'subject_id'   => $subject->id,
+                    'subject_name' => $subject->name,
+                    'score'        => $sc?->score,
+                    'max_score'    => $sc?->max_score ?? 100,
+                    'grade'        => $sc?->grade,
+                    'percent'      => $sc?->percentage,
+                ];
+            });
+
+            $scored = $subjectScores->filter(fn($s) => $s['score'] !== null);
+            $avg = $scored->count() > 0 ? round($scored->avg('percent'), 1) : null;
+
+            return [
+                'id'               => $student->id,
+                'name'             => $student->name,
+                'admission_number' => $student->admission_number,
+                'subjects'         => $subjectScores->values(),
+                'avg_percent'      => $avg,
+            ];
+        });
+
+        return response()->json([
+            'class_id'   => $schoolClass->id,
+            'class_name' => $schoolClass->name,
+            'subjects'   => $subjects->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->values(),
+            'students'   => $studentRows->values(),
+        ]);
+    }
+
     public function studentReport(Student $student)
     {
         $scores = Score::with('subject')

@@ -97,10 +97,12 @@ Route::prefix('v1')->group(function () {
         });
 
         // Reports (read-only)
-        Route::get('reports/overview',              [ReportController::class, 'overview'])
+        Route::get('reports/overview',                       [ReportController::class, 'overview'])
             ->middleware('role:admin,school');
-        Route::get('reports/class/{schoolClass}',   [ReportController::class, 'classPerformance'])
+        Route::get('reports/class/{schoolClass}',            [ReportController::class, 'classPerformance'])
             ->middleware('role:admin,school,teacher');
-        Route::get('reports/student/{student}',     [ReportController::class, 'studentReport']);
+        Route::get('reports/class/{schoolClass}/scores',     [ReportController::class, 'classStudentScores'])
+            ->middleware('role:admin,school');
+        Route::get('reports/student/{student}',              [ReportController::class, 'studentReport']);
     });
 });

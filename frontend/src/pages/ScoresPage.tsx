@@ -102,12 +102,16 @@ const ScoresPage = () => {
 <p>${className ? className + " · " : ""}${term} Term · ${academicYear}</p>
 <table><thead><tr><th>Student</th><th>Adm #</th><th>Score</th><th>Max</th><th>%</th><th>Grade</th></tr></thead><tbody>${rows}</tbody></table>
 </body></html>`;
-    const win = window.open("", "_blank");
-    if (!win) return;
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-    setTimeout(() => win.print(), 400);
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
 
   return (

@@ -25,14 +25,14 @@ const navItems: Record<UserRole, NavItem[]> = {
   admin: [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Users, label: "Users", path: "/users" },
-    { icon: BarChart3, label: "Grades", path: "/performance" },
+    { icon: BarChart3, label: "Academics", path: "/dashboard?tab=academics" },
     { icon: CreditCard, label: "Finance", path: "/payments" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ],
   school: [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Users, label: "Students", path: "/students" },
-    { icon: BarChart3, label: "Grades", path: "/performance" },
+    { icon: BarChart3, label: "Academics", path: "/dashboard?tab=academics" },
     { icon: CreditCard, label: "Finance", path: "/payments" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ],
@@ -51,10 +51,12 @@ const BottomNav = () => {
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card safe-bottom">
       <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-1">
         {items.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = item.path.includes("?")
+            ? location.pathname + location.search === item.path
+            : location.pathname === item.path && !location.search;
           return (
             <Link
-              key={item.path}
+              key={item.label}
               to={item.path}
               className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
                 isActive

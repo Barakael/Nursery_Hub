@@ -292,41 +292,56 @@ const StudentsPage = () => {
           </div>
 
           {/* Mobile cards */}
-          <div className="grid grid-cols-2 gap-3 md:hidden">
+          <div className="space-y-2.5 md:hidden">
             {students.map((s) => (
               <div
                 key={s.id}
-                className="rounded-2xl bg-card shadow-card overflow-hidden cursor-pointer active:scale-[0.98] transition-all"
+                className="rounded-2xl bg-card shadow-card overflow-hidden cursor-pointer active:scale-[0.99] transition-all"
                 onClick={() => setViewStudent(s)}
               >
-                <div className="flex flex-col p-3.5 gap-2">
-                  {/* Avatar + name row */}
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm">
+                <div className="flex items-stretch">
+                  {/* Colour sidebar */}
+                  <div className="w-1 shrink-0 bg-primary rounded-l-2xl" />
+
+                  <div className="flex flex-1 items-center gap-3 px-4 py-3.5">
+                    {/* Avatar */}
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm">
                       {s.name.charAt(0).toUpperCase()}
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm text-foreground truncate leading-tight">{s.name}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{s.admission_number}</p>
-                    </div>
-                  </div>
 
-                  {/* Tags row */}
-                  <div className="flex items-center justify-between gap-1">
-                    {s.gender ? (
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary capitalize">
-                        {s.gender}
-                      </span>
-                    ) : <span />}
-                    {canManage && (
-                      <div className="flex gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(s)} className="h-7 w-7 text-muted-foreground">
-                          <Pencil className="h-3.5 w-3.5" />
+                    {/* Main info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground truncate">{s.name}</p>
+                      <p className="text-xs text-muted-foreground">{s.admission_number}</p>
+                      {s.gender && (
+                        <span className="mt-1 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary capitalize">
+                          {s.gender}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Action buttons or chevron */}
+                    {canManage ? (
+                      <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEdit(s)}
+                          className="h-8 w-8 text-muted-foreground"
+                        >
+                          <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)} className="h-7 w-7 text-destructive">
-                          <Trash2 className="h-3.5 w-3.5" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(s.id)}
+                          className="h-8 w-8 text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
+                    ) : (
+                      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
                     )}
                   </div>
                 </div>

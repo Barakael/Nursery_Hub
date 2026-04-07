@@ -396,12 +396,16 @@ const StaffReportsView = () => {
 <p>${termLabel}${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</p>
 <table><thead><tr><th>Student</th><th>Adm #</th>${headerCells}<th>Avg %</th></tr></thead><tbody>${rows}</tbody></table>
 </body></html>`;
-    const win = window.open("", "_blank");
-    if (!win) return;
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-    setTimeout(() => win.print(), 400);
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
 
   return (
@@ -552,31 +556,31 @@ const StaffReportsView = () => {
             </div>
           )}
 
-          {/* Subject averages chart */}
+          {/* Subject averages */}
           {classReport && !loadingClass && (
             <div className="rounded-2xl bg-card p-5 shadow-card">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-foreground">{classReport.class_name} — Subject Averages</h3>
                 {classReport.overall_avg != null && (
                   <span className="rounded-lg bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
-                    Avg {classReport.overall_avg}%
+                    Overall {classReport.overall_avg}%
                   </span>
                 )}
               </div>
               {classReport.subjects?.length > 0 ? (
-                <div className="mx-auto max-w-sm">
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={classReport.subjects} margin={{ top: 0, right: 8, left: -20, bottom: 0 }} barCategoryGap="30%">
-                      <XAxis dataKey="subject_name" tick={{ fontSize: 11 }} />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                      <Tooltip />
-                      <Bar dataKey="avg_score" name="Avg Score" radius={[6, 6, 0, 0]} maxBarSize={40}>
-                        {classReport.subjects.map((_, i) => (
-                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {classReport.subjects.map((s, i) => (
+                    <div
+                      key={s.subject_name}
+                      className="rounded-xl p-3"
+                      style={{ backgroundColor: `${COLORS[i % COLORS.length]}18` }}
+                    >
+                      <p className="text-xs font-medium text-muted-foreground truncate">{s.subject_name}</p>
+                      <p className="mt-1 text-xl font-bold" style={{ color: COLORS[i % COLORS.length] }}>
+                        {s.avg_score != null ? `${s.avg_score}%` : "—"}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">No scores recorded yet.</p>

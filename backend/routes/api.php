@@ -66,9 +66,9 @@ Route::prefix('v1')->group(function () {
             Route::delete('subjects/{subject}',[SubjectController::class, 'destroy']);
         });
 
-        // Scores
+        // Scores — all authenticated roles can read; only staff can write
         Route::get('scores/student/{student}', [ScoreController::class, 'byStudent']);
-        Route::get('scores/subject/{subject}', [ScoreController::class, 'bySubject']);
+        Route::get('scores/subject/{subject}', [ScoreController::class, 'bySubject'])->middleware('role:teacher,admin,school');
         Route::middleware('role:teacher,admin,school')->group(function () {
             Route::post('scores',          [ScoreController::class, 'upsert']);
             Route::delete('scores/{score}',[ScoreController::class, 'destroy']);

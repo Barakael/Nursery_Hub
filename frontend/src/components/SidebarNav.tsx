@@ -26,7 +26,7 @@ const navItems: Record<UserRole, NavItem[]> = {
     { icon: Home, label: "Dashboard", path: "/dashboard" },
     { icon: Users, label: "Users", path: "/users" },
     { icon: BookOpen, label: "Subjects", path: "/subjects" },
-    { icon: BarChart3, label: "Grades", path: "/performance" },
+    { icon: BarChart3, label: "Academics", path: "/dashboard?tab=academics" },
     { icon: CreditCard, label: "Finance", path: "/payments" },
     { icon: BarChart3, label: "Reports", path: "/reports" },
     { icon: Settings, label: "Settings", path: "/settings" },
@@ -35,7 +35,7 @@ const navItems: Record<UserRole, NavItem[]> = {
     { icon: Home, label: "Dashboard", path: "/dashboard" },
     { icon: Users, label: "Students", path: "/students" },
     { icon: BookOpen, label: "Subjects", path: "/subjects" },
-    { icon: BarChart3, label: "Grades", path: "/performance" },
+    { icon: BarChart3, label: "Academics", path: "/dashboard?tab=academics" },
     { icon: CreditCard, label: "Finance", path: "/payments" },
     { icon: Calendar, label: "Timetable", path: "/timetable" },
     { icon: User, label: "Staffs", path: "/users" },
@@ -68,10 +68,12 @@ const SidebarNav = () => {
       {/* Nav Items */}
       <nav className="flex-1 space-y-1 px-3 py-4">
         {items.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = item.path.includes("?")
+            ? location.pathname + location.search === item.path
+            : location.pathname === item.path && !location.search;
           return (
             <Link
-              key={item.path}
+              key={item.label}
               to={item.path}
               className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
                 isActive

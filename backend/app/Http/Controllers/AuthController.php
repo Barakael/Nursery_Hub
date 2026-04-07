@@ -20,7 +20,7 @@ class AuthController extends Controller
 
         $token = $user->createToken('api-token')->plainTextToken;
 
-        $relations = $user->role === 'parent' ? ['school', 'children'] : ['school'];
+        $relations = $user->role === 'parent' ? ['school', 'children.schoolClass'] : ['school'];
 
         return response()->json([
             'token' => $token,
@@ -37,7 +37,7 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
-        $relations = $user->role === 'parent' ? ['school', 'children'] : ['school'];
+        $relations = $user->role === 'parent' ? ['school', 'children.schoolClass'] : ['school'];
         return new UserResource($user->load($relations));
     }
 

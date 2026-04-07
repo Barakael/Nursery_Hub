@@ -67,9 +67,9 @@ const UsersPage = () => {
           <h1 className="text-xl font-bold text-foreground">Users</h1>
           <p className="text-sm text-muted-foreground">Staff & parents</p>
         </div>
-        {canManage && (
+        {canManage && tab === "teacher" && (
           <Button size="sm" onClick={openAdd}>
-            <Plus className="mr-1.5 h-4 w-4" /> Add {tab === "teacher" ? "Teacher" : "Parent"}
+            <Plus className="mr-1.5 h-4 w-4" /> Add Teacher
           </Button>
         )}
       </div>
@@ -161,27 +161,12 @@ const UsersPage = () => {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add {form.role === "teacher" ? "Teacher" : "Parent"}</DialogTitle>
+            <DialogTitle>Add Teacher</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Role</label>
-                <Select
-                  value={form.role}
-                  onValueChange={(v) => setForm({ ...form, role: v as Role })}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="teacher">Teacher</SelectItem>
-                    <SelectItem value="parent">Parent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Phone</label>
-                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+234…" />
-              </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Phone</label>
+              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+234…" />
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Full Name *</label>

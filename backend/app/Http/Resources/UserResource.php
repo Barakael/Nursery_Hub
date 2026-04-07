@@ -18,7 +18,12 @@ class UserResource extends JsonResource
             'avatar'     => $this->avatar,
             'school_id'  => $this->school_id,
             'school'               => $this->whenLoaded('school', fn() => ['id' => $this->school->id, 'name' => $this->school->name]),
-            'children'             => $this->whenLoaded('children', fn() => $this->children->map(fn($c) => ['id' => $c->id, 'name' => $c->name])),
+            'children'             => $this->whenLoaded('children', fn() => $this->children->map(fn($c) => [
+                'id'         => $c->id,
+                'name'       => $c->name,
+                'class_id'   => $c->class_id,
+                'class_name' => $c->schoolClass?->name,
+            ])),
             'can_manage_timetable' => (bool) $this->can_manage_timetable,
             'created_at'           => $this->created_at?->toDateString(),
         ];

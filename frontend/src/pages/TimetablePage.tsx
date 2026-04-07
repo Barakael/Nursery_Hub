@@ -21,7 +21,9 @@ const EMPTY_FORM = {
 
 const TimetablePage = () => {
   const { user } = useAuth();
-  const canEdit = user?.role !== "parent";
+  // canEdit: admin/school always; teacher only if explicitly granted can_manage_timetable
+  const canEdit = user?.role === "admin" || user?.role === "school" ||
+    (user?.role === "teacher" && user?.can_manage_timetable === true);
 
   const [tab, setTab] = useState<"subjects" | "meals">("subjects");
   const { data: slots = [], isLoading } = useTimetable();

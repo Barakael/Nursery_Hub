@@ -13,6 +13,13 @@ class ScoreController extends Controller
 {
     public function byStudent(Student $student, Request $request)
     {
+        $user = $request->user();
+
+        // Parents may only view their own children's scores
+        if ($user->role === 'parent' && $student->parent_id !== $user->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
         $query = Score::with('subject')
             ->where('student_id', $student->id);
 
@@ -24,14 +31,15 @@ class ScoreController extends Controller
             $query->where('academic_year', $request->academic_year);
         }
 
-        return ScoreResource::collection($query->get());
+        return ScoreResource::collection($query->orderBy('id')->get());
     }
 
     public function bySubject(Subject $subject, Request $request)
     {
         $scores = Score::with('student')
             ->where('subject_id', $subject->id)
-            ->when($request->filled('term'), fn($q) => $q->where('term', $request->term))
+            ->when($request->filled('term'),          fn($q) => $q->where('term',          $request->term))
+            ->when($request->filled('academic_year'), fn($q) => $q->where('academic_year', $request->academic_year))
             ->orderBy('score', 'desc')
             ->get();
 

@@ -12,7 +12,7 @@ export interface AuthUser {
   phone?: string;
   school_id?: number;
   school?: { id: number; name: string } | null;
-  children?: { id: number; name: string }[]; // populated for parent role
+  children?: { id: number; name: string; class_id?: number; class_name?: string }[]; // populated for parent role
   childNames?: string[]; // derived from children
   can_manage_timetable?: boolean;
 }

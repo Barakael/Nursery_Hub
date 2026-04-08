@@ -17,6 +17,7 @@ import ClassesPage from "@/pages/ClassesPage";
 import UsersPage from "@/pages/UsersPage";
 import SubjectsPage from "@/pages/SubjectsPage";
 import SettingsPage from "@/pages/SettingsPage";
+import InventoryPage from "@/pages/InventoryPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -60,6 +61,7 @@ const AppRoutes = () => (
     <Route path="/subjects"    element={<ProtectedRoute><SubjectsPage /></ProtectedRoute>} />
     <Route path="/reports"     element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
     <Route path="/settings"    element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+    <Route path="/inventory"   element={<ProtectedRoute><InventoryPage /></ProtectedRoute>} />
     <Route path="*"            element={<NotFound />} />
   </Routes>
 );

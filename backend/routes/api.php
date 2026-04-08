@@ -12,6 +12,8 @@ use App\Http\Controllers\FeeStructureController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\InventoryItemController;
+use App\Http\Controllers\InventorySaleController;
 
 Route::prefix('v1')->group(function () {
 
@@ -104,5 +106,21 @@ Route::prefix('v1')->group(function () {
         Route::get('reports/class/{schoolClass}/scores',     [ReportController::class, 'classStudentScores'])
             ->middleware('role:admin,school');
         Route::get('reports/student/{student}',              [ReportController::class, 'studentReport']);
+
+        // Inventory Items — stockkeeper can read; admin/school can manage
+        Route::get('inventory/items',          [InventoryItemController::class, 'index'])->middleware('role:admin,school,stockkeeper');
+        Route::middleware('role:admin,school')->group(function () {
+            Route::post('inventory/items',             [InventoryItemController::class, 'store']);
+            Route::put('inventory/items/{item}',       [InventoryItemController::class, 'update']);
+            Route::delete('inventory/items/{item}',    [InventoryItemController::class, 'destroy']);
+        });
+
+        // Inventory Sales — stockkeeper can list and create; admin/school also get summary and export
+        Route::get('inventory/sales',          [InventorySaleController::class, 'index'])->middleware('role:admin,school,stockkeeper');
+        Route::post('inventory/sales',         [InventorySaleController::class, 'store'])->middleware('role:admin,school,stockkeeper');
+        Route::middleware('role:admin,school')->group(function () {
+            Route::get('inventory/summary',    [InventorySaleController::class, 'summary']);
+            Route::get('inventory/export',     [InventorySaleController::class, 'export']);
+        });
     });
 });

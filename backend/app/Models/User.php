@@ -91,6 +91,11 @@ class User extends Authenticatable
         return $this->role === 'parent';
     }
 
+    public function isStockkeeper(): bool
+    {
+        return $this->role === 'stockkeeper';
+    }
+
     public function canManageTimetable(): bool
     {
         return $this->isAdmin() || $this->isSchool() || ($this->isTeacher() && (bool) $this->can_manage_timetable);

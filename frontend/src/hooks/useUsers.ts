@@ -5,7 +5,7 @@ export interface AppUser {
   id: number;
   name: string;
   email: string;
-  role: "admin" | "school" | "teacher" | "parent";
+  role: "admin" | "school" | "teacher" | "parent" | "stockkeeper";
   phone?: string;
   school_id?: number;
   school_name?: string;

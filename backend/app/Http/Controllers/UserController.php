@@ -46,7 +46,7 @@ class UserController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
-            'role'     => ['required', Rule::in(['teacher', 'parent'])],
+            'role'     => ['required', Rule::in(['teacher', 'parent', 'stockkeeper'])],
             'phone'    => ['nullable', 'string', 'max:20'],
         ]);
 

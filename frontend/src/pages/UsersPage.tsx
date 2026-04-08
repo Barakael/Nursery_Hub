@@ -13,13 +13,14 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
-type Role = "teacher" | "parent";
+type Role = "teacher" | "parent" | "stockkeeper";
 
 const EMPTY = { name: "", email: "", phone: "", password: "", role: "teacher" as Role };
 
 const roleColors: Record<string, string> = {
-  teacher: "bg-blue-100 text-blue-700",
-  parent:  "bg-green-100 text-green-700",
+  teacher:     "bg-blue-100 text-blue-700",
+  parent:      "bg-green-100 text-green-700",
+  stockkeeper: "bg-orange-100 text-orange-700",
 };
 
 const UsersPage = () => {
@@ -42,7 +43,8 @@ const UsersPage = () => {
   const handleSave = async () => {
     try {
       await createUser.mutateAsync(form);
-      toast({ title: `${tab === "teacher" ? "Teacher" : "Parent"} added` });
+      const roleLabel = form.role === "stockkeeper" ? "Stockkeeper" : "Teacher";
+      toast({ title: `${roleLabel} added` });
       setOpen(false);
     } catch {
       toast({ title: "Failed to add user", variant: "destructive" });
@@ -67,16 +69,16 @@ const UsersPage = () => {
           <h1 className="text-xl font-bold text-foreground">Users</h1>
           <p className="text-sm text-muted-foreground">Staff & parents</p>
         </div>
-        {canManage && tab === "teacher" && (
+        {canManage && tab !== "parent" && (
           <Button size="sm" onClick={openAdd}>
-            <Plus className="mr-1.5 h-4 w-4" /> Add Teacher
+            <Plus className="mr-1.5 h-4 w-4" /> Add Staff
           </Button>
         )}
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 rounded-2xl bg-card p-1.5 shadow-soft">
-        {(["teacher", "parent"] as Role[]).map((t) => (
+        {(["teacher", "parent", "stockkeeper"] as Role[]).map((t) => (
           <button
             key={t}
             onClick={() => switchTab(t)}
@@ -161,12 +163,23 @@ const UsersPage = () => {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Teacher</DialogTitle>
+            <DialogTitle>Add Staff</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1">
-              <label className="text-sm font-medium">Phone</label>
-              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+255…" />
+              <label className="text-sm font-medium">Role *</label>
+              <Select
+                value={form.role}
+                onValueChange={(v) => setForm({ ...form, role: v as Role })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="teacher">Teacher</SelectItem>
+                  <SelectItem value="stockkeeper">Stockkeeper</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Full Name *</label>
@@ -175,6 +188,10 @@ const UsersPage = () => {
             <div className="space-y-1">
               <label className="text-sm font-medium">Email *</label>
               <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Phone</label>
+              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+255…" />
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Password *</label>

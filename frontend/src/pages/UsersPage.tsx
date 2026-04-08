@@ -166,7 +166,7 @@ const UsersPage = () => {
           <div className="space-y-3 py-2">
             <div className="space-y-1">
               <label className="text-sm font-medium">Phone</label>
-              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+234…" />
+              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+255…" />
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Full Name *</label>

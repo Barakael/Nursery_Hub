@@ -1,4 +1,4 @@
-import { Home, BookOpen, CreditCard, Calendar, User, Users, BarChart3, Settings, FileBarChart, FileClock, Menu, X } from "lucide-react";
+import { Home, BookOpen, CreditCard, Calendar, User, Users, BarChart3, Settings, FileBarChart, FileClock, Menu, X, Package } from "lucide-react";
 import { useAuth, UserRole } from "@/contexts/AuthContext";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
@@ -27,7 +27,7 @@ const navItems: Record<UserRole, NavItem[]> = {
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Users, label: "Users", path: "/users" },
     { icon: BarChart3, label: "Academics", path: "/dashboard?tab=academics" },
-    { icon: CreditCard, label: "Finance", path: "/payments" },
+    { icon: Package, label: "Inventory", path: "/inventory" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ],
   school: [
@@ -35,6 +35,10 @@ const navItems: Record<UserRole, NavItem[]> = {
     { icon: Users, label: "Students", path: "/students" },
     { icon: BarChart3, label: "Academics", path: "/dashboard?tab=academics" },
     { icon: CreditCard, label: "Finance", path: "/payments" },
+  ],
+  stockkeeper: [
+    { icon: Home, label: "Home", path: "/dashboard" },
+    { icon: Package, label: "Inventory", path: "/inventory" },
   ],
 };
 

@@ -1,4 +1,4 @@
-import { Home, BookOpen, CreditCard, Calendar, User, Users, BarChart3, Settings, GraduationCap, FileBarChart } from "lucide-react";
+import { Home, BookOpen, CreditCard, Calendar, User, Users, BarChart3, Settings, GraduationCap, FileBarChart, Package } from "lucide-react";
 import { useAuth, UserRole } from "@/contexts/AuthContext";
 import { Link, useLocation } from "react-router-dom";
 
@@ -28,6 +28,7 @@ const navItems: Record<UserRole, NavItem[]> = {
     { icon: BookOpen, label: "Subjects", path: "/subjects" },
     { icon: BarChart3, label: "Academics", path: "/dashboard?tab=academics" },
     { icon: CreditCard, label: "Finance", path: "/payments" },
+    { icon: Package, label: "Inventory", path: "/inventory" },
     { icon: BarChart3, label: "Reports", path: "/reports" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ],
@@ -37,9 +38,14 @@ const navItems: Record<UserRole, NavItem[]> = {
     { icon: BookOpen, label: "Subjects", path: "/subjects" },
     { icon: BarChart3, label: "Academics", path: "/dashboard?tab=academics" },
     { icon: CreditCard, label: "Finance", path: "/payments" },
+    { icon: Package, label: "Inventory", path: "/inventory" },
     { icon: Calendar, label: "Timetable", path: "/timetable" },
     { icon: User, label: "Staffs", path: "/users" },
     { icon: Settings, label: "Settings", path: "/settings" },
+  ],
+  stockkeeper: [
+    { icon: Home, label: "Dashboard", path: "/dashboard" },
+    { icon: Package, label: "Inventory", path: "/inventory" },
   ],
 };
 

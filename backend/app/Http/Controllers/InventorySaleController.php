@@ -65,7 +65,7 @@ class InventorySaleController extends Controller
                 'student_id'     => $data['student_id'] ?? null,
                 'recipient_name' => $data['recipient_name'] ?? null,
                 'recorded_by'    => $request->user()->id,
-                'notes'          => $data['notes'] ?? null,
+                'payment_method' => $data['payment_method'] ?? 'cash',
             ]);
 
             return new InventorySaleResource($sale->load('item', 'student', 'recorder'));
@@ -121,7 +121,7 @@ class InventorySaleController extends Controller
 
         $callback = function () use ($sales) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Date', 'Item', 'Quantity', 'Unit Price', 'Total', 'Recipient Type', 'Recipient', 'Recorded By', 'Notes']);
+            fputcsv($handle, ['Date', 'Item', 'Quantity', 'Unit Price', 'Total', 'Recipient Type', 'Recipient', 'Payment Method', 'Recorded By']);
 
             foreach ($sales as $sale) {
                 $recipient = $sale->recipient_type === 'student'
@@ -136,8 +136,8 @@ class InventorySaleController extends Controller
                     number_format($sale->total_price, 2),
                     ucfirst($sale->recipient_type),
                     $recipient,
+                    ucfirst($sale->payment_method ?? 'cash'),
                     $sale->recorder?->name ?? '-',
-                    $sale->notes ?? '',
                 ]);
             }
 

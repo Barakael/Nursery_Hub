@@ -25,6 +25,7 @@ export interface InventorySale {
   student?: { id: number; name: string } | null;
   recipient_name?: string | null;
   recorder?: { id: number; name: string };
+  payment_method: "cash" | "account";
   notes?: string | null;
   created_at: string;
 }
@@ -92,6 +93,7 @@ export const useCreateInventorySale = () => {
       recipient_type: "student" | "other";
       student_id?: number | null;
       recipient_name?: string;
+      payment_method?: "cash" | "account";
       notes?: string;
     }) => api.post("/v1/inventory/sales", data).then((r) => r.data.data as InventorySale),
     onSuccess: () => {

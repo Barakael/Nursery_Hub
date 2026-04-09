@@ -16,7 +16,7 @@ class StoreInventorySaleRequest extends FormRequest
             'recipient_type' => ['required', 'in:student,other'],
             'student_id'     => ['nullable', 'required_if:recipient_type,student', 'exists:students,id'],
             'recipient_name' => ['nullable', 'string', 'max:255'],
-            'notes'          => ['nullable', 'string', 'max:500'],
+            'payment_method' => ['nullable', 'in:cash,account'],
         ];
     }
 }

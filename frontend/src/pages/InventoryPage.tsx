@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Package, PlusCircle, Pencil, Trash2, Download, AlertTriangle, TrendingUp,
-  ShoppingCart, BarChart3, Loader2,
+  ShoppingCart, BarChart3, Loader2, Search, CheckCircle2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -39,6 +39,7 @@ const StockkeeperView = () => {
   const [saleOpen, setSaleOpen] = useState(false);
 
   const { data: salesData, isLoading: salesLoading } = useInventorySales({ page, per_page: 20 });
+  const { data: summaryData } = useInventorySummary();
   const sales = salesData?.data ?? [];
   const meta  = salesData?.meta;
 
@@ -46,24 +47,44 @@ const StockkeeperView = () => {
   const { data: itemsData } = useInventoryItems({ per_page: 100 });
   const items = itemsData?.data ?? [];
   const { data: studentsData } = useStudents({ per_page: 500 });
-  const students = studentsData?.data ?? [];
+  const students: any[] = studentsData?.data ?? [];
 
-  const [saleItemId, setSaleItemId]           = useState("");
-  const [saleQty, setSaleQty]                 = useState("1");
+  const [saleItemId, setSaleItemId]               = useState("");
+  const [saleQty, setSaleQty]                     = useState("1");
+  const [paymentMethod, setPaymentMethod]         = useState<"cash" | "account">("cash");
   const [saleRecipientType, setSaleRecipientType] = useState<"student" | "other">("student");
-  const [saleStudentId, setSaleStudentId]     = useState("");
+  const [saleStudentId, setSaleStudentId]         = useState("");
+  const [studentSearch, setStudentSearch]         = useState("");
+  const [studentDropdownOpen, setStudentDropdownOpen] = useState(false);
   const [saleRecipientName, setSaleRecipientName] = useState("");
-  const [saleNotes, setSaleNotes]             = useState("");
 
   const createSale = useCreateInventorySale();
 
+  const selectedItem = items.find((i: InventoryItem) => String(i.id) === saleItemId) ?? null;
+  const total = selectedItem ? selectedItem.price * Number(saleQty || 1) : 0;
+
+  const filteredStudents = useMemo(() => {
+    if (!studentSearch.trim()) return students.slice(0, 8);
+    const q = studentSearch.toLowerCase();
+    return students
+      .filter((s: any) =>
+        s.name.toLowerCase().includes(q) ||
+        (s.admission_number && s.admission_number.toLowerCase().includes(q))
+      )
+      .slice(0, 8);
+  }, [students, studentSearch]);
+
   const resetSaleForm = () => {
-    setSaleItemId(""); setSaleQty("1"); setSaleRecipientType("student");
-    setSaleStudentId(""); setSaleRecipientName(""); setSaleNotes("");
+    setSaleItemId(""); setSaleQty("1"); setPaymentMethod("cash");
+    setSaleRecipientType("student"); setSaleStudentId("");
+    setStudentSearch(""); setSaleRecipientName("");
   };
 
   const handleRecordSale = async () => {
-    if (!saleItemId || !saleQty) return;
+    if (!saleItemId) {
+      toast({ title: "Please select an item.", variant: "destructive" });
+      return;
+    }
     if (saleRecipientType === "student" && !saleStudentId) {
       toast({ title: "Please select a student.", variant: "destructive" });
       return;
@@ -76,12 +97,12 @@ const StockkeeperView = () => {
       await createSale.mutateAsync({
         item_id:        Number(saleItemId),
         quantity:       Number(saleQty),
+        payment_method: paymentMethod,
         recipient_type: saleRecipientType,
         student_id:     saleRecipientType === "student" ? Number(saleStudentId) : null,
         recipient_name: saleRecipientType === "other" ? saleRecipientName.trim() : undefined,
-        notes:          saleNotes.trim() || undefined,
       });
-      toast({ title: "Sale recorded successfully." });
+      toast({ title: "Sale recorded." });
       setSaleOpen(false);
       resetSaleForm();
     } catch (err: any) {
@@ -93,18 +114,32 @@ const StockkeeperView = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-foreground">Inventory Sales</h1>
-          <p className="text-sm text-muted-foreground">Record and track item distributions</p>
+          <h1 className="text-xl font-bold text-foreground">Inventory</h1>
+          <p className="text-sm text-muted-foreground">Your sales log</p>
         </div>
-        <Button onClick={() => setSaleOpen(true)} className="shrink-0 gap-2">
+        <Button onClick={() => setSaleOpen(true)} className="gap-2">
           <ShoppingCart className="h-4 w-4" />
-          Record Sale
+          Sell Item
         </Button>
       </div>
+
+      {/* Quick stats strip */}
+      {summaryData && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-2xl bg-card shadow-soft px-4 py-3">
+            <p className="text-xs font-medium text-muted-foreground">Today's Revenue</p>
+            <p className="text-lg font-extrabold text-foreground">{fmt(summaryData.today_revenue)}</p>
+          </div>
+          <div className="rounded-2xl bg-card shadow-soft px-4 py-3">
+            <p className="text-xs font-medium text-muted-foreground">Units Sold</p>
+            <p className="text-lg font-extrabold text-foreground">{summaryData.total_items_sold}</p>
+          </div>
+        </div>
+      )}
 
       {/* Sales list */}
       {salesLoading ? (
@@ -115,6 +150,7 @@ const StockkeeperView = () => {
         <div className="flex flex-col items-center gap-3 py-16 text-muted-foreground">
           <Package className="h-12 w-12 opacity-30" />
           <p className="text-sm font-medium">No sales recorded yet.</p>
+          <Button variant="outline" onClick={() => setSaleOpen(true)}>Record your first sale</Button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -126,23 +162,21 @@ const StockkeeperView = () => {
             return (
               <div
                 key={sale.id}
-                className="rounded-2xl bg-card shadow-soft px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3"
+                className="rounded-2xl bg-card shadow-soft px-4 py-3 flex items-center gap-3"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                   <Package className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground truncate">{sale.item?.name ?? "-"}</p>
+                  <p className="font-semibold text-sm text-foreground truncate">{sale.item?.name ?? "-"}</p>
                   <p className="text-xs text-muted-foreground">
-                    {sale.recipient_type === "student" ? "Student" : "Other"}: {recipient}
+                    {recipient} · {sale.payment_method === "account" ? "Account" : "Cash"}
                   </p>
                   <p className="text-xs text-muted-foreground">{formatDate(sale.created_at)}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="font-bold text-foreground">{fmt(sale.total_price)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {sale.quantity} × {fmt(sale.unit_price)}
-                  </p>
+                  <p className="font-bold text-sm text-foreground">{fmt(sale.total_price)}</p>
+                  <p className="text-xs text-muted-foreground">{sale.quantity} × {fmt(sale.unit_price)}</p>
                 </div>
               </div>
             );
@@ -165,43 +199,70 @@ const StockkeeperView = () => {
         </div>
       )}
 
-      {/* Record Sale Dialog */}
+      {/* Sell Dialog */}
       <Dialog open={saleOpen} onOpenChange={(o) => { setSaleOpen(o); if (!o) resetSaleForm(); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Record Sale</DialogTitle>
+            <DialogTitle>Sell Item</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-4 py-1">
             {/* Item */}
             <div className="space-y-1.5">
               <label className="text-sm font-semibold">Item</label>
               <Select value={saleItemId} onValueChange={setSaleItemId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select an item" />
+                  <SelectValue placeholder="Select item to sell" />
                 </SelectTrigger>
                 <SelectContent>
                   {items.map((item: InventoryItem) => (
-                    <SelectItem key={item.id} value={String(item.id)}>
-                      {item.name} — {fmt(item.price)} (stock: {item.stock_quantity})
+                    <SelectItem key={item.id} value={String(item.id)} disabled={item.stock_quantity === 0}>
+                      {item.name} — {fmt(item.price)}
+                      {item.stock_quantity === 0 ? " (out of stock)" : ` (${item.stock_quantity} left)`}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Quantity */}
+            {/* Quantity + live total */}
             <div className="space-y-1.5">
               <label className="text-sm font-semibold">Quantity</label>
               <Input
                 type="number"
                 min={1}
+                max={selectedItem?.stock_quantity}
                 value={saleQty}
                 onChange={(e) => setSaleQty(e.target.value)}
-                placeholder="1"
               />
+              {selectedItem && Number(saleQty) > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Total: <span className="font-bold text-foreground">{fmt(total)}</span>
+                </p>
+              )}
             </div>
 
-            {/* Recipient type */}
+            {/* Payment method */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold">Payment Method</label>
+              <div className="flex gap-2">
+                {(["cash", "account"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setPaymentMethod(m)}
+                    className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors border ${
+                      paymentMethod === m
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card text-muted-foreground border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {m === "cash" ? "💵 Cash" : "🏦 Account"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Given To */}
             <div className="space-y-1.5">
               <label className="text-sm font-semibold">Given To</label>
               <div className="flex gap-2">
@@ -209,8 +270,13 @@ const StockkeeperView = () => {
                   <button
                     key={type}
                     type="button"
-                    onClick={() => setSaleRecipientType(type)}
-                    className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-colors border ${
+                    onClick={() => {
+                      setSaleRecipientType(type);
+                      setStudentSearch("");
+                      setSaleStudentId("");
+                      setSaleRecipientName("");
+                    }}
+                    className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors border ${
                       saleRecipientType === type
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-card text-muted-foreground border-border hover:border-primary/50"
@@ -222,47 +288,65 @@ const StockkeeperView = () => {
               </div>
             </div>
 
-            {/* Student select */}
+            {/* Student typeahead */}
             {saleRecipientType === "student" && (
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold">Student</label>
-                <Select value={saleStudentId} onValueChange={setSaleStudentId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a student" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {students.map((s: any) => (
-                      <SelectItem key={s.id} value={String(s.id)}>
-                        {s.name}
-                        {s.class?.name ? ` — ${s.class.name}` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <label className="text-sm font-semibold">Student Name</label>
+                <div className="relative">
+                  <Input
+                    value={studentSearch}
+                    onChange={(e) => {
+                      setStudentSearch(e.target.value);
+                      setSaleStudentId("");
+                      setStudentDropdownOpen(true);
+                    }}
+                    onFocus={() => setStudentDropdownOpen(true)}
+                    onBlur={() => setTimeout(() => setStudentDropdownOpen(false), 150)}
+                    placeholder="Type to search student…"
+                    autoComplete="off"
+                  />
+                  {studentDropdownOpen && filteredStudents.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl bg-card border border-border shadow-elevated max-h-44 overflow-y-auto">
+                      {filteredStudents.map((s: any) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setStudentSearch(s.name);
+                            setSaleStudentId(String(s.id));
+                            setStudentDropdownOpen(false);
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-accent transition-colors first:rounded-t-xl last:rounded-b-xl"
+                        >
+                          <span className="font-medium">{s.name}</span>
+                          {s.class?.name && (
+                            <span className="text-muted-foreground text-xs ml-2">— {s.class.name}</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {saleStudentId && (
+                  <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Student selected
+                  </p>
+                )}
               </div>
             )}
 
-            {/* Other recipient name */}
+            {/* Other recipient */}
             {saleRecipientType === "other" && (
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold">Recipient Name</label>
                 <Input
                   value={saleRecipientName}
                   onChange={(e) => setSaleRecipientName(e.target.value)}
-                  placeholder="e.g. John Doe (visitor)"
+                  placeholder="e.g. John Doe"
                 />
               </div>
             )}
-
-            {/* Notes */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold">Notes (optional)</label>
-              <Input
-                value={saleNotes}
-                onChange={(e) => setSaleNotes(e.target.value)}
-                placeholder="Any additional notes"
-              />
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setSaleOpen(false); resetSaleForm(); }}>
@@ -270,7 +354,7 @@ const StockkeeperView = () => {
             </Button>
             <Button onClick={handleRecordSale} disabled={createSale.isPending}>
               {createSale.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Record Sale
+              Confirm Sale{selectedItem && Number(saleQty) > 0 ? ` · ${fmt(total)}` : ""}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -486,6 +570,7 @@ const AdminInventoryView = () => {
                       <th className="px-4 py-3 text-right font-semibold">Qty</th>
                       <th className="px-4 py-3 text-right font-semibold">Unit Price</th>
                       <th className="px-4 py-3 text-right font-semibold">Total</th>
+                      <th className="px-4 py-3 text-left font-semibold">Payment</th>
                       <th className="px-4 py-3 text-left font-semibold">Recorded By</th>
                     </tr>
                   </thead>
@@ -510,6 +595,15 @@ const AdminInventoryView = () => {
                           <td className="px-4 py-3 text-right">{sale.quantity}</td>
                           <td className="px-4 py-3 text-right">{fmt(sale.unit_price)}</td>
                           <td className="px-4 py-3 text-right font-semibold">{fmt(sale.total_price)}</td>
+                          <td className="px-4 py-3">
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                              sale.payment_method === "account"
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-green-100 text-green-700"
+                            }`}>
+                              {sale.payment_method === "account" ? "Account" : "Cash"}
+                            </span>
+                          </td>
                           <td className="px-4 py-3 text-muted-foreground">{sale.recorder?.name ?? "-"}</td>
                         </tr>
                       );

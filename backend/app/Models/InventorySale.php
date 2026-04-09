@@ -16,6 +16,7 @@ class InventorySale extends Model
         'recipient_name',
         'recorded_by',
         'notes',
+        'payment_method',
     ];
 
     protected function casts(): array

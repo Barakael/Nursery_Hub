@@ -11,10 +11,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useScoresByStudent } from "@/hooks/useScores";
 import { useTimetable } from "@/hooks/useTimetable";
 import { useStudentPayments, useStudentBalance } from "@/hooks/usePayments";
+import { useInventorySummary, useInventorySales } from "@/hooks/useInventory";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Users, GraduationCap, TrendingUp, Wallet, BookOpen, Calendar, CreditCard, CheckCircle2, Clock, AlertCircle, FileDown } from "lucide-react";
+import { Users, GraduationCap, TrendingUp, Wallet, BookOpen, Calendar, CreditCard, CheckCircle2, Clock, AlertCircle, FileDown, Package, ShoppingCart } from "lucide-react";
 
 const COLORS = [
   "#020884ef", // blue
@@ -42,6 +43,88 @@ function gradeColor(pct: number) {
   if (pct >= 50) return "bg-yellow-100 text-yellow-700";
   return "bg-destructive/15 text-destructive";
 }
+
+// ── Stockkeeper Dashboard ────────────────────────────────────────────────────
+const StockkeeperDashboard = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const { data: summary, isLoading: summaryLoading } = useInventorySummary();
+  const { data: recentData } = useInventorySales({ per_page: 5 });
+  const recentSales = (recentData?.data ?? []) as any[];
+
+  const fmtDate = (iso: string) =>
+    new Date(iso).toLocaleString(undefined, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  const cards = [
+    { label: "Today's Revenue",  value: fmt(summary?.today_revenue ?? 0),    icon: TrendingUp,    color: "text-green-600",  bg: "bg-green-50" },
+    { label: "This Month",       value: fmt(summary?.month_revenue ?? 0),    icon: Wallet,        color: "text-blue-600",   bg: "bg-blue-50" },
+    { label: "Low Stock Items",  value: String(summary?.low_stock_count ?? 0), icon: AlertCircle, color: "text-amber-600",  bg: "bg-amber-50" },
+    { label: "Total Units Sold", value: String(summary?.total_items_sold ?? 0), icon: Package,    color: "text-purple-600", bg: "bg-purple-50" },
+  ];
+
+  return (
+    <div className="animate-fade-in space-y-5">
+      <div>
+        <h1 className="text-xl font-bold text-foreground">Welcome, {user?.name.split(" ")[0]} 👋</h1>
+        <p className="text-sm text-muted-foreground">Your inventory overview</p>
+      </div>
+
+      {summaryLoading ? (
+        <div className="grid grid-cols-2 gap-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-2xl bg-card shadow-card h-20 animate-pulse" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {cards.map((card) => (
+            <div key={card.label} className="rounded-2xl bg-card shadow-card px-4 py-4 flex flex-col gap-2">
+              <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${card.bg}`}>
+                <card.icon className={`h-5 w-5 ${card.color}`} />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">{card.label}</p>
+                <p className="text-lg font-extrabold text-foreground leading-tight">{card.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button
+        onClick={() => navigate("/inventory")}
+        className="w-full flex items-center justify-between rounded-2xl bg-primary px-5 py-4 text-primary-foreground font-bold transition hover:opacity-90"
+      >
+        <span>Record a Sale</span>
+        <ShoppingCart className="h-5 w-5" />
+      </button>
+
+      {recentSales.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Recent Transactions</p>
+          {recentSales.map((sale: any) => {
+            const recipient = sale.recipient_type === "student"
+              ? sale.student?.name ?? "Unknown"
+              : sale.recipient_name ?? "-";
+            return (
+              <div key={sale.id} className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                  <Package className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-foreground truncate">{sale.item?.name ?? "-"}</p>
+                  <p className="text-xs text-muted-foreground">{recipient} · {fmtDate(sale.created_at)}</p>
+                </div>
+                <p className="font-bold text-sm text-foreground shrink-0">{fmt(sale.total_price)}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ── Parent Dashboard ─────────────────────────────────────────────────────────
 const ParentDashboard = () => {
@@ -645,8 +728,9 @@ const StaffReportsView = () => {
 
 const ReportsPage = () => {
   const { user } = useAuth();
-  if (user?.role === "parent")  return <ParentDashboard />;
-  if (user?.role === "teacher") return <TeacherReportsView />;
+  if (user?.role === "parent")      return <ParentDashboard />;
+  if (user?.role === "teacher")     return <TeacherReportsView />;
+  if (user?.role === "stockkeeper") return <StockkeeperDashboard />;
   return <StaffReportsView />;
 };
 

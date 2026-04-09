@@ -39,6 +39,7 @@ const navItems: Record<UserRole, NavItem[]> = {
   stockkeeper: [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Package, label: "Inventory", path: "/inventory" },
+    { icon: User, label: "Profile", path: "/profile" },
   ],
 };
 

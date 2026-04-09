@@ -28,7 +28,7 @@ class InventorySaleResource extends JsonResource
                 'id'   => $this->recorder->id,
                 'name' => $this->recorder->name,
             ]),
-            'notes'          => $this->notes,
+            'payment_method' => $this->payment_method ?? 'cash',
             'created_at'     => $this->created_at?->toIso8601String(),
         ];
     }

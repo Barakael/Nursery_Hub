@@ -41,8 +41,8 @@ Route::prefix('v1')->group(function () {
         });
 
         // Students — teachers can read; admin/school can write
-        Route::get('students',        [StudentController::class, 'index'])->middleware('role:admin,school,teacher');
-        Route::get('students/{student}', [StudentController::class, 'show'])->middleware('role:admin,school,teacher');
+        Route::get('students',        [StudentController::class, 'index'])->middleware('role:admin,school,teacher,stockkeeper');
+        Route::get('students/{student}', [StudentController::class, 'show'])->middleware('role:admin,school,teacher,stockkeeper');
         Route::middleware('role:admin,school')->group(function () {
             Route::post('students',            [StudentController::class, 'store']);
             Route::put('students/{student}',   [StudentController::class, 'update']);
@@ -118,9 +118,7 @@ Route::prefix('v1')->group(function () {
         // Inventory Sales — stockkeeper can list and create; admin/school also get summary and export
         Route::get('inventory/sales',          [InventorySaleController::class, 'index'])->middleware('role:admin,school,stockkeeper');
         Route::post('inventory/sales',         [InventorySaleController::class, 'store'])->middleware('role:admin,school,stockkeeper');
-        Route::middleware('role:admin,school')->group(function () {
-            Route::get('inventory/summary',    [InventorySaleController::class, 'summary']);
-            Route::get('inventory/export',     [InventorySaleController::class, 'export']);
-        });
+        Route::get('inventory/summary', [InventorySaleController::class, 'summary'])->middleware('role:admin,school,stockkeeper');
+        Route::get('inventory/export',   [InventorySaleController::class, 'export'])->middleware('role:admin,school');
     });
 });

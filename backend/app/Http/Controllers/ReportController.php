@@ -36,27 +36,34 @@ class ReportController extends Controller
             ->where('school_id', $schoolId)->get();
 
         foreach ($studentsQ as $s) {
-            $fs = FeeStructure::where('school_id', $schoolId)
+            $feeStructuresForStudent = FeeStructure::where('school_id', $schoolId)
                 ->where('is_active', true)
-                ->where('class_id', $s->class_id)
-                ->latest()->first()
-                ?? FeeStructure::where('school_id', $schoolId)
-                    ->where('is_active', true)
-                    ->whereNull('class_id')
-                    ->latest()->first();
+                ->where(function ($q) use ($s) {
+                    $q->where('class_id', $s->class_id)
+                      ->orWhereNull('class_id');
+                })
+                ->get();
 
-            if (!$fs) continue;
+            if ($feeStructuresForStudent->isEmpty()) continue;
 
-            $paid = (float) Payment::where('student_id', $s->id)
-                ->where('fee_structure_id', $fs->id)
-                ->sum('amount_paid');
+            $studentTotal = 0;
+            $studentPaid  = 0;
 
-            $totalFees      += $fs->total_amount;
-            $totalCollected += $paid;
+            foreach ($feeStructuresForStudent as $fs) {
+                $paid = (float) Payment::where('student_id', $s->id)
+                    ->where('fee_structure_id', $fs->id)
+                    ->sum('amount_paid');
 
-            if ($paid <= 0) {
+                $studentTotal += $fs->total_amount;
+                $studentPaid  += $paid;
+            }
+
+            $totalFees      += $studentTotal;
+            $totalCollected += $studentPaid;
+
+            if ($studentPaid <= 0) {
                 $unpaid++;
-            } elseif ($paid >= $fs->total_amount - 0.01) {
+            } elseif ($studentPaid >= $studentTotal - 0.01) {
                 $paidFull++;
             } else {
                 $paidPartial++;
@@ -66,9 +73,9 @@ class ReportController extends Controller
                 'id'         => $s->id,
                 'name'       => $s->name,
                 'class_name' => $s->schoolClass?->name ?? '—',
-                'total_fees' => $fs->total_amount,
-                'total_paid' => $paid,
-                'remaining'  => max(0, $fs->total_amount - $paid),
+                'total_fees' => $studentTotal,
+                'total_paid' => $studentPaid,
+                'remaining'  => max(0, $studentTotal - $studentPaid),
             ];
         }
 

@@ -269,9 +269,6 @@ const StaffFinanceView = () => {
                 <div>
                   <p className="text-xs font-medium opacity-70">Total Fees</p>
                   <p className="text-2xl font-extrabold">{fmt(lookupBalance.total ?? 0)}</p>
-                  {lookupBalance.structure && (
-                    <p className="text-xs opacity-60 mt-0.5">{lookupBalance.structure.name}</p>
-                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-xs font-medium opacity-70">Balance Due</p>
@@ -290,6 +287,40 @@ const StaffFinanceView = () => {
               </div>
             </div>
 
+            {/* Per-Fee-Structure Breakdown */}
+            {(lookupBalance.structures?.length ?? 0) > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Fee Breakdown</p>
+                {lookupBalance.structures!.map((fs) => (
+                  <div key={fs.id} className="rounded-xl bg-accent/50 px-4 py-2.5 space-y-1.5">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm font-semibold text-card-foreground">{fs.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {[fs.term, fs.academic_year].filter(Boolean).join(" · ") || "—"}
+                        </p>
+                      </div>
+                      <p className="text-xs font-bold text-card-foreground">{fmt(fs.total)}</p>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-accent">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${Math.min(fs.percent, 100)}%`,
+                          backgroundColor: fs.percent >= 100 ? "#15803d" : fs.percent > 0 ? "#ca8a04" : "#020884",
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-muted-foreground">Paid: <span className="font-semibold" style={{ color: "#15803d" }}>{fmt(fs.paid)}</span></span>
+                      <span className="text-muted-foreground">Due: <span className="font-semibold text-destructive">{fmt(fs.remaining)}</span></span>
+                      <span className="font-semibold text-muted-foreground">{fs.percent}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Payment history */}
             {lookupPayments.length > 0 ? (
               <div className="space-y-2">
@@ -299,6 +330,7 @@ const StaffFinanceView = () => {
                     <div>
                       <p className="text-sm font-semibold text-card-foreground">{fmt(p.amount_paid)}</p>
                       <p className="text-xs text-muted-foreground">
+                        {p.fee_structure?.name ? <span className="font-medium">{p.fee_structure.name} · </span> : null}
                         {methodLabel[p.method ?? ""] ?? p.method ?? "—"}
                         {p.reference ? ` · ${p.reference}` : ""}
                       </p>
@@ -332,59 +364,7 @@ const StaffFinanceView = () => {
 
   
 
-      {/* Class Payment Summary */}
-      <div className="hidden md:block rounded-2xl bg-card p-5 shadow-card">
-        <h3 className="mb-4 font-bold text-card-foreground">Summary by Class</h3>
-        {!classSummary.length ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">No fee data available.</p>
-        ) : (
-          <div className="grid grid-cols-3 gap-3">
-            {classSummary.map((c) => {
-              const pct = c.total > 0 ? Math.round((c.paid / c.total) * 100) : 0;
-              return (
-                <div key={c.class_name} className="rounded-2xl border border-border p-3 flex flex-col gap-2">
-                  <div>
-                    <p className="text-sm font-bold text-card-foreground truncate">{c.class_name}</p>
-                    <p className="text-[10px] text-muted-foreground">{c.count} student{c.count !== 1 ? "s" : ""}</p>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-accent">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: "#15803d" }}
-                    />
-                  </div>
-                  <p className="text-[10px] text-muted-foreground text-right">{pct}%</p>
-                  <div className="grid grid-cols-3 gap-1 text-center">
-                    <div className="rounded-lg py-1.5" style={{ backgroundColor: "rgba(21,128,61,0.1)" }}>
-                      <p className="text-xs font-extrabold" style={{ color: "#15803d" }}>{c.paid_full}</p>
-                      <p className="text-[9px] text-muted-foreground">Paid</p>
-                    </div>
-                    <div className="rounded-lg py-1.5" style={{ backgroundColor: "rgba(239,200,58,0.15)" }}>
-                      <p className="text-xs font-extrabold" style={{ color: "#ca8a04" }}>{c.partial}</p>
-                      <p className="text-[9px] text-muted-foreground">Part</p>
-                    </div>
-                    <div className="rounded-lg py-1.5" style={{ backgroundColor: "rgba(2,8,132,0.1)" }}>
-                      <p className="text-xs font-extrabold" style={{ color: "#020884" }}>{c.unpaid}</p>
-                      <p className="text-[9px] text-muted-foreground">None</p>
-                    </div>
-                  </div>
-                  <div className="text-[10px] space-y-0.5">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Collected</span>
-                      <span className="font-semibold" style={{ color: "#15803d" }}>{fmt(c.paid)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Pending</span>
-                      <span className="font-semibold text-destructive">{fmt(c.remaining)}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
+    
 
       {/* Payments List */}
       <div className="rounded-2xl bg-card p-5 shadow-card">
@@ -406,6 +386,7 @@ const StaffFinanceView = () => {
                   <div>
                     <p className="text-sm font-semibold text-card-foreground">{p.student?.name ?? "—"}</p>
                     <p className="text-xs text-muted-foreground">
+                      {p.fee_structure?.name ? <span className="font-medium">{p.fee_structure.name} · </span> : null}
                       {methodLabel[p.method ?? ""] ?? p.method ?? "—"}
                       {p.reference ? ` · ${p.reference}` : ""}
                     </p>
@@ -591,9 +572,6 @@ const ParentFinanceView = () => {
           {child.name} — Total Fees
         </p>
         <p className="text-3xl font-extrabold text-primary-foreground">{fmt(totalFee)}</p>
-        {balance?.structure && (
-          <p className="mt-0.5 text-xs text-primary-foreground/60">{balance.structure.name}</p>
-        )}
         <div className="mt-4 h-3 overflow-hidden rounded-full bg-primary-foreground/20">
           <div className="h-full rounded-full bg-primary-foreground transition-all" style={{ width: `${Math.min(percent, 100)}%` }} />
         </div>
@@ -602,6 +580,51 @@ const ParentFinanceView = () => {
           <span>{percent}% Complete</span>
         </div>
       </div>
+
+      {/* Per-Fee-Structure Breakdown */}
+      {(balance?.structures?.length ?? 0) > 0 && (
+        <div className="rounded-2xl bg-card p-5 shadow-card">
+          <h3 className="mb-3 font-bold text-card-foreground">Fee Breakdown</h3>
+          <div className="space-y-3">
+            {balance!.structures!.map((fs) => {
+              const pctFs = fs.percent ?? 0;
+              return (
+                <div key={fs.id} className="rounded-xl border border-border p-3 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm font-semibold text-card-foreground">{fs.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {[fs.term, fs.academic_year].filter(Boolean).join(" · ") || "—"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold text-card-foreground">{fmt(fs.total)}</p>
+                    </div>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-accent">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(pctFs, 100)}%`,
+                        backgroundColor: pctFs >= 100 ? "#15803d" : pctFs > 0 ? "#ca8a04" : "#020884",
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-muted-foreground">
+                      Paid: <span className="font-semibold" style={{ color: "#15803d" }}>{fmt(fs.paid)}</span>
+                    </span>
+                    <span className="text-muted-foreground">
+                      Due: <span className="font-semibold text-destructive">{fmt(fs.remaining)}</span>
+                    </span>
+                    <span className="font-semibold text-muted-foreground">{pctFs}%</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-card p-4 shadow-soft text-center">
@@ -631,6 +654,7 @@ const ParentFinanceView = () => {
                   <div>
                     <p className="text-sm font-semibold text-card-foreground">{fmt(p.amount_paid)}</p>
                     <p className="text-xs text-muted-foreground">
+                      {p.fee_structure?.name ? <span className="font-medium">{p.fee_structure.name} · </span> : null}
                       {methodLabel[p.method ?? ""] ?? p.method ?? "—"}
                       {p.reference ? ` · ${p.reference}` : ""}
                     </p>

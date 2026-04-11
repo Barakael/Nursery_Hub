@@ -366,6 +366,54 @@ const StaffFinanceView = () => {
 
     
 
+      {/* Per-Fee-Structure Collection Summary */}
+      {feeStructures.length > 0 && (
+        <div className="rounded-2xl bg-card p-5 shadow-card">
+          <h3 className="mb-4 font-bold text-card-foreground">Collection by Fee Structure</h3>
+          <div className="space-y-3">
+            {feeStructures.map((fs) => {
+              const fsCollected = fs.collected ?? 0;
+              const fsPending = fs.pending ?? 0;
+              const fsPct = fs.collection_percent ?? 0;
+              return (
+                <div key={fs.id} className="rounded-xl border border-border p-3 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm font-bold text-card-foreground">{fs.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {[fs.term, fs.academic_year, fs.class_name ?? "All classes"].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold text-card-foreground">{fmt(fs.total_amount)}</p>
+                      <p className="text-[10px] text-muted-foreground">per student</p>
+                    </div>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-accent">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(fsPct, 100)}%`,
+                        backgroundColor: fsPct >= 100 ? "#15803d" : fsPct > 0 ? "#ca8a04" : "#020884",
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-muted-foreground">
+                      Collected: <span className="font-semibold" style={{ color: "#15803d" }}>{fmt(fsCollected)}</span>
+                    </span>
+                    <span className="text-muted-foreground">
+                      Pending: <span className="font-semibold text-destructive">{fmt(fsPending)}</span>
+                    </span>
+                    <span className="font-semibold text-muted-foreground">{fsPct}%</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Payments List */}
       <div className="rounded-2xl bg-card p-5 shadow-card">
         <h3 className="mb-4 font-bold text-card-foreground">Recent Payments</h3>
@@ -435,7 +483,17 @@ const StaffFinanceView = () => {
                       return !f.class_id || f.class_id === selectedStudent.class_id;
                     })
                     .map((f) => (
-                    <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>
+                    <SelectItem key={f.id} value={String(f.id)}>
+                      <div className="flex flex-col">
+                        <span>{f.name}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {[f.term, f.academic_year, f.class_name].filter(Boolean).join(" · ")}
+                          {" — "}
+                          {fmt(f.total_amount)}
+                          {typeof f.collected === "number" ? ` (collected: ${fmt(f.collected)})` : ""}
+                        </span>
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

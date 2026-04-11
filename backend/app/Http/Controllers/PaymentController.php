@@ -38,45 +38,68 @@ class PaymentController extends Controller
 
     public function studentBalance(Student $student, Request $request)
     {
-        $schoolId    = $student->school_id;
-        $feeStructure = FeeStructure::where('school_id', $schoolId)
-            ->where('is_active', true)
-            ->where('class_id', $student->class_id)
-            ->latest()->first()
-            ?? FeeStructure::where('school_id', $schoolId)
-                ->where('is_active', true)
-                ->whereNull('class_id')
-                ->latest()->first();
+        $schoolId = $student->school_id;
 
-        if (!$feeStructure) {
+        // Fetch ALL active fee structures for this student's class + school-wide ones
+        $feeStructures = FeeStructure::where('school_id', $schoolId)
+            ->where('is_active', true)
+            ->where(function ($q) use ($student) {
+                $q->where('class_id', $student->class_id)
+                  ->orWhereNull('class_id');
+            })
+            ->orderBy('academic_year')
+            ->orderBy('term')
+            ->get();
+
+        if ($feeStructures->isEmpty()) {
             return response()->json([
-                'total'     => 0,
-                'paid'      => 0,
-                'remaining' => 0,
-                'percent'   => 0,
-                'structure' => null,
+                'total'      => 0,
+                'paid'       => 0,
+                'remaining'  => 0,
+                'percent'    => 0,
+                'structure'  => null,
+                'structures' => [],
             ]);
         }
 
-        $paid = Payment::where('student_id', $student->id)
-            ->where('fee_structure_id', $feeStructure->id)
-            ->sum('amount_paid');
+        $grandTotal = 0;
+        $grandPaid  = 0;
+        $structures = [];
 
-        $paid      = (float) $paid;
-        $total     = $feeStructure->total_amount;
-        $remaining = max(0, $total - $paid);
-        $percent   = $total > 0 ? round(($paid / $total) * 100, 1) : 0;
+        foreach ($feeStructures as $fs) {
+            $paid = (float) Payment::where('student_id', $student->id)
+                ->where('fee_structure_id', $fs->id)
+                ->sum('amount_paid');
+
+            $total     = $fs->total_amount;
+            $remaining = max(0, $total - $paid);
+            $percent   = $total > 0 ? round(($paid / $total) * 100, 1) : 0;
+
+            $grandTotal += $total;
+            $grandPaid  += $paid;
+
+            $structures[] = [
+                'id'            => $fs->id,
+                'name'          => $fs->name,
+                'term'          => $fs->term,
+                'academic_year' => $fs->academic_year,
+                'total'         => $total,
+                'paid'          => $paid,
+                'remaining'     => $remaining,
+                'percent'       => $percent,
+            ];
+        }
+
+        $grandRemaining = max(0, $grandTotal - $grandPaid);
+        $grandPercent   = $grandTotal > 0 ? round(($grandPaid / $grandTotal) * 100, 1) : 0;
 
         return response()->json([
-            'total'     => $total,
-            'paid'      => $paid,
-            'remaining' => $remaining,
-            'percent'   => $percent,
-            'structure' => [
-                'id'   => $feeStructure->id,
-                'name' => $feeStructure->name,
-                'term' => $feeStructure->term,
-            ],
+            'total'      => $grandTotal,
+            'paid'       => $grandPaid,
+            'remaining'  => $grandRemaining,
+            'percent'    => $grandPercent,
+            'structure'  => $structures[0] ?? null, // backward compat
+            'structures' => $structures,
         ]);
     }
 

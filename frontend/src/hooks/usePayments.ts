@@ -15,12 +15,24 @@ export interface Payment {
   recorded_by_name?: string;
 }
 
+export interface FeeStructureBalance {
+  id: number;
+  name: string;
+  term: string;
+  academic_year?: string;
+  total: number;
+  paid: number;
+  remaining: number;
+  percent: number;
+}
+
 export interface StudentBalance {
   total: number;
   paid: number;
   remaining: number;
   percent: number;
-  structure?: { id: number; name: string; term: string } | null;
+  structure?: FeeStructureBalance | null;
+  structures?: FeeStructureBalance[];
 }
 
 export const usePayments = () =>

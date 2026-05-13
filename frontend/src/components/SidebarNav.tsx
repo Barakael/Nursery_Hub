@@ -63,8 +63,12 @@ const SidebarNav = () => {
     <div className="flex h-full flex-col bg-sidebar border-r border-sidebar-border">
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
-        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-sidebar-accent">
-          <img src="/school-logo.png" alt="School Schooled Academy logo" className="h-full w-full object-cover" />
+        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-3xl bg-white">
+          <img
+            src="/school-logo.png"
+            alt="School Schooled Academy logo"
+            className="h-full w-full mt-2 scale-[1.3] rounded-lg object-cover object-center"
+          />
         </div>
         <div>
           <h2 className="text-base font-extrabold text-sidebar-foreground">NurseryHub</h2>

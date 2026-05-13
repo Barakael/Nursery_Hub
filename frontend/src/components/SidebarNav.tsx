@@ -1,4 +1,4 @@
-import { Home, BookOpen, CreditCard, Calendar, User, Users, BarChart3, Settings, GraduationCap, FileBarChart, Package } from "lucide-react";
+import { Home, BookOpen, CreditCard, Calendar, User, Users, BarChart3, Settings, Package } from "lucide-react";
 import { useAuth, UserRole } from "@/contexts/AuthContext";
 import { Link, useLocation } from "react-router-dom";
 
@@ -63,8 +63,8 @@ const SidebarNav = () => {
     <div className="flex h-full flex-col bg-sidebar border-r border-sidebar-border">
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-accent">
-          <GraduationCap className="h-6 w-6 text-sidebar-accent-foreground" />
+        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-sidebar-accent">
+          <img src="/school-logo.png" alt="School Schooled Academy logo" className="h-full w-full object-cover" />
         </div>
         <div>
           <h2 className="text-base font-extrabold text-sidebar-foreground">NurseryHub</h2>

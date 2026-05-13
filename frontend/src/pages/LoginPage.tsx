@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { GraduationCap, Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
+import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
 
 const demoAccounts = [
   { email: "parent@nurseryhub.demo", password: "demo1234", label: "Parent" },
@@ -40,8 +40,8 @@ const LoginPage = () => {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-primary px-6 py-10">
       <div className="mb-8 text-center">
-        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-primary-foreground/10 shadow-elevated">
-          <GraduationCap className="h-10 w-10 text-primary-foreground" />
+        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-primary-foreground/10 shadow-elevated">
+          <img src="/school-logo.png" alt="School Schooled Academy logo" className="h-full w-full object-cover" />
         </div>
         <h1 className="text-3xl font-extrabold text-primary-foreground">NurseryHub</h1>
         <p className="mt-1 text-sm font-medium text-primary-foreground/60">

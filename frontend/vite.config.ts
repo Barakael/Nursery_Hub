@@ -18,11 +18,11 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["robots.txt"],
+      includeAssets: ["robots.txt", "sitemap.xml", "favicon-32x32.png", "apple-touch-icon.png", "school-logo.png"],
       manifest: {
-        name: "NurseryHub",
-        short_name: "NurseryHub",
-        description: "Nursery School Management System",
+        name: "Shule Portal - School Schooled Academy Daycare Center",
+        short_name: "Shule Portal",
+        description: "School and daycare management platform for students, finance, academics, and parent engagement.",
         theme_color: "#0f2a5c",
         background_color: "#ffffff",
         display: "standalone",

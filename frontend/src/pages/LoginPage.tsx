@@ -47,7 +47,7 @@ const LoginPage = () => {
             className="h-full mt-4 w-full scale-[1.2] rounded-xl object-cover object-center"
           />
         </div>
-        <h1 className="text-3xl font-extrabold text-primary-foreground">NurseryHub</h1>
+        <h1 className="text-3xl font-extrabold text-primary-foreground">Shule Yetu</h1>
         <p className="mt-1 text-sm font-medium text-primary-foreground/60">
           School Management Made Simple
         </p>

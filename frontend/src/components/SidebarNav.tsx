@@ -71,7 +71,7 @@ const SidebarNav = () => {
           />
         </div>
         <div>
-          <h2 className="text-base font-extrabold text-sidebar-foreground">NurseryHub</h2>
+          <h2 className="text-base font-extrabold text-sidebar-foreground">Shule Yetu</h2>
           <p className="text-xs text-sidebar-foreground/50">School Management</p>
         </div>
       </div>

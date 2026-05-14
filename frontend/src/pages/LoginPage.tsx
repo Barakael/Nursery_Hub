@@ -105,7 +105,7 @@ const LoginPage = () => {
           </button>
         </form>
 
-        {/* Demo Accounts */}
+        {/* Demo Accounts
         <div className="mt-6">
           <p className="mb-3 text-center text-xs font-semibold text-primary-foreground/50">
             Quick Demo Access
@@ -121,7 +121,7 @@ const LoginPage = () => {
               </button>
             ))}
           </div>
-        </div>
+        </div> */}
       </div>
 
       <p className="mt-8 text-xs text-primary-foreground/30">

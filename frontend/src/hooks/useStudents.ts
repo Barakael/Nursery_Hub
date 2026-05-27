@@ -18,6 +18,7 @@ export interface Student {
 interface StudentsParams {
   search?: string;
   class_id?: number | string;
+  school_id?: number | string;
   page?: number;
   per_page?: number;
 }

@@ -24,7 +24,7 @@ const navItems: Record<UserRole, NavItem[]> = {
   ],
   admin: [
     { icon: Home, label: "Dashboard", path: "/dashboard" },
-    { icon: Users, label: "Users", path: "/users" },
+    { icon: Users, label: "Schools", path: "/schools" },
     { icon: BookOpen, label: "Subjects", path: "/subjects" },
     { icon: BarChart3, label: "Academics", path: "/dashboard?tab=academics" },
     { icon: CreditCard, label: "Finance", path: "/payments" },
@@ -58,6 +58,8 @@ const SidebarNav = () => {
 
   const baseItems = navItems[user.role] ?? navItems.admin;
   const items = baseItems;
+  const logoSrc = user.school?.logo || "/school-logo.png";
+  const title = user.school?.name || "Shule Yetu";
 
   return (
     <div className="flex h-full flex-col bg-sidebar border-r border-sidebar-border">
@@ -65,13 +67,13 @@ const SidebarNav = () => {
       <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
         <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-3xl bg-white">
           <img
-            src="/school-logo.png"
-            alt="School Schooled Academy logo"
+            src={logoSrc}
+            alt={`${title} logo`}
             className="h-full w-full mt-2 scale-[1.3] rounded-lg object-cover object-center"
           />
         </div>
         <div>
-          <h2 className="text-base font-extrabold text-sidebar-foreground">Shule Yetu</h2>
+          <h2 className="text-base font-extrabold text-sidebar-foreground">{title}</h2>
           <p className="text-xs text-sidebar-foreground/50">School Management</p>
         </div>
       </div>

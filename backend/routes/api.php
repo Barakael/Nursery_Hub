@@ -14,6 +14,8 @@ use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\InventoryItemController;
 use App\Http\Controllers\InventorySaleController;
+use App\Http\Controllers\SubscriptionPlanController;
+use App\Http\Controllers\SchoolSubscriptionController;
 
 Route::prefix('v1')->group(function () {
 
@@ -21,7 +23,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login']);
 
     // ─── Protected ───────────────────────────────────────────────────────────
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'school.active'])->group(function () {
 
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/me',     [AuthController::class, 'me']);
@@ -30,6 +32,22 @@ Route::prefix('v1')->group(function () {
         // Schools (admin only)
         Route::apiResource('schools', SchoolController::class)
             ->middleware('role:admin');
+
+        // Subscription plans (admin only)
+        Route::apiResource('subscription-plans', SubscriptionPlanController::class)
+            ->middleware('role:admin');
+
+        // School subscriptions
+        Route::middleware('role:admin')->group(function () {
+            Route::get('school-subscriptions', [SchoolSubscriptionController::class, 'index']);
+            Route::post('school-subscriptions', [SchoolSubscriptionController::class, 'store']);
+            Route::put('school-subscriptions/{schoolSubscription}', [SchoolSubscriptionController::class, 'update']);
+            Route::delete('school-subscriptions/{schoolSubscription}', [SchoolSubscriptionController::class, 'destroy']);
+            Route::patch('school-subscriptions/{schoolSubscription}/activate', [SchoolSubscriptionController::class, 'activate']);
+            Route::patch('school-subscriptions/{schoolSubscription}/deactivate', [SchoolSubscriptionController::class, 'deactivate']);
+        });
+        Route::get('school-subscriptions/me', [SchoolSubscriptionController::class, 'mySubscription'])
+            ->middleware('role:school');
 
         // Classes — teachers can read; admin/school can write
         Route::get('classes',          [ClassController::class, 'index'])->middleware('role:admin,school,teacher');
@@ -100,6 +118,8 @@ Route::prefix('v1')->group(function () {
 
         // Reports (read-only)
         Route::get('reports/overview',                       [ReportController::class, 'overview'])
+            ->middleware('role:admin,school');
+        Route::get('reports/fee-structure/{feeStructure}',   [ReportController::class, 'feeStructureOverview'])
             ->middleware('role:admin,school');
         Route::get('reports/class/{schoolClass}',            [ReportController::class, 'classPerformance'])
             ->middleware('role:admin,school,teacher');

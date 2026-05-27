@@ -37,6 +37,7 @@ class UserController extends Controller
 
     public function show(User $user)
     {
+        $this->assertSchoolScope($user, request());
         return new UserResource($user);
     }
 
@@ -59,6 +60,7 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        $this->assertSchoolScope($user, $request);
         $data = $request->validate([
             'name'                 => ['sometimes', 'string', 'max:255'],
             'email'                => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
@@ -79,7 +81,19 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        $this->assertSchoolScope($user, request());
         $user->delete();
         return response()->json(['message' => 'User deleted.']);
+    }
+
+    private function assertSchoolScope(User $target, Request $request): void
+    {
+        if ($target->role === 'admin') {
+            abort(403, 'This user cannot be managed here.');
+        }
+
+        if ((int) $target->school_id !== $this->schoolId($request)) {
+            abort(403, 'You cannot access this user.');
+        }
     }
 }

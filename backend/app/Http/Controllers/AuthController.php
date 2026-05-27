@@ -7,6 +7,7 @@ use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Models\School;
 
 class AuthController extends Controller
 {
@@ -18,9 +19,16 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials.'], 401);
         }
 
+        if (!$user->isAdmin() && $user->school_id) {
+            $schoolActive = School::where('id', $user->school_id)->value('is_active');
+            if (!$schoolActive) {
+                return response()->json(['message' => 'Your school account is inactive. Contact system admin.'], 403);
+            }
+        }
+
         $token = $user->createToken('api-token')->plainTextToken;
 
-        $relations = $user->role === 'parent' ? ['school', 'children.schoolClass'] : ['school'];
+        $relations = $user->role === 'parent' ? ['school', 'children.schoolClass'] : ['school', 'school.currentSubscription.plan'];
 
         return response()->json([
             'token' => $token,
@@ -37,7 +45,7 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
-        $relations = $user->role === 'parent' ? ['school', 'children.schoolClass'] : ['school'];
+        $relations = $user->role === 'parent' ? ['school', 'children.schoolClass'] : ['school', 'school.currentSubscription.plan'];
         return new UserResource($user->load($relations));
     }
 

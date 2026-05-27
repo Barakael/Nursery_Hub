@@ -11,6 +11,8 @@ use App\Models\Student;
 use App\Models\Subject;
 use App\Models\TimetableSlot;
 use App\Models\User;
+use App\Models\SubscriptionPlan;
+use App\Models\SchoolSubscription;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -27,10 +29,21 @@ class DatabaseSeeder extends Seeder
             'address' => '12 Palm Avenue, Lagos',
             'phone'   => '+234 801 234 5678',
             'email'   => 'info@sunshinenursery.edu',
+            'is_active' => true,
+            'logo' => 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=300&q=80',
+        ]);
+
+        $school2 = School::create([
+            'name' => 'Bluebell Early Learning',
+            'address' => '44 Garden Way, Abuja',
+            'phone' => '+234 809 000 1122',
+            'email' => 'hello@bluebell.edu',
+            'is_active' => false,
+            'logo' => 'https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=300&q=80',
         ]);
 
         // ── Admin (system-wide) ───────────────────────────────────────────────
-        User::create([
+        $admin = User::create([
             'name'     => 'System Admin',
             'email'    => 'admin@nurseryhub.demo',
             'password' => Hash::make('demo1234'),
@@ -44,6 +57,45 @@ class DatabaseSeeder extends Seeder
             'password'  => Hash::make('demo1234'),
             'role'      => 'school',
             'school_id' => $school->id,
+        ]);
+
+        User::create([
+            'name' => 'Bluebell Manager',
+            'email' => 'bluebell@nurseryhub.demo',
+            'password' => Hash::make('demo1234'),
+            'role' => 'school',
+            'school_id' => $school2->id,
+        ]);
+
+        $starterPlan = SubscriptionPlan::create([
+            'name' => 'Starter',
+            'description' => 'Basic package for one nursery school',
+            'price' => 150000,
+            'billing_cycle' => 'monthly',
+            'is_active' => true,
+        ]);
+        $growthPlan = SubscriptionPlan::create([
+            'name' => 'Growth',
+            'description' => 'Full operations package',
+            'price' => 350000,
+            'billing_cycle' => 'monthly',
+            'is_active' => true,
+        ]);
+
+        SchoolSubscription::create([
+            'school_id' => $school->id,
+            'subscription_plan_id' => $growthPlan->id,
+            'starts_on' => now()->subMonth()->toDateString(),
+            'status' => 'active',
+            'activated_by' => $admin->id,
+        ]);
+
+        SchoolSubscription::create([
+            'school_id' => $school2->id,
+            'subscription_plan_id' => $starterPlan->id,
+            'starts_on' => now()->subMonths(2)->toDateString(),
+            'status' => 'inactive',
+            'activated_by' => $admin->id,
         ]);
 
         // ── Teachers ──────────────────────────────────────────────────────────

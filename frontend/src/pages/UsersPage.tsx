@@ -38,6 +38,18 @@ const UsersPage = () => {
 
   const canManage = user?.role === "admin" || user?.role === "school";
 
+  if (user?.role === "admin") {
+    return (
+      <div className="animate-fade-in rounded-2xl bg-card p-6 shadow-card">
+        <h1 className="text-xl font-bold text-foreground">Users</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          School staff are managed per school. Open the Schools page and use a school account to manage teachers,
+          parents and stockkeepers.
+        </p>
+      </div>
+    );
+  }
+
   const openAdd = () => { setForm({ ...EMPTY, role: tab }); setOpen(true); };
 
   const handleSave = async () => {

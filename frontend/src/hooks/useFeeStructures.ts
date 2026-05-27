@@ -12,16 +12,22 @@ export interface FeeStructure {
   school_id: number;
   class_id?: number | null;
   class_name?: string | null;
+  is_active?: boolean;
   collected?: number;
   pending?: number;
   collection_percent?: number;
 }
 
-export const useFeeStructures = () =>
+interface FeeStructureParams {
+  school_id?: number;
+  is_active?: boolean;
+}
+
+export const useFeeStructures = (params?: FeeStructureParams) =>
   useQuery({
-    queryKey: ["fee-structures"],
+    queryKey: ["fee-structures", params],
     queryFn: () =>
-      api.get("/v1/fee-structures").then((r) => r.data.data as FeeStructure[]),
+      api.get("/v1/fee-structures", { params }).then((r) => r.data.data as FeeStructure[]),
   });
 
 export const useCreateFeeStructure = () => {

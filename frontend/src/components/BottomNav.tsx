@@ -25,7 +25,8 @@ const navItems: Record<UserRole, NavItem[]> = {
   ],
   admin: [
     { icon: Home, label: "Home", path: "/dashboard" },
-    { icon: Users, label: "Users", path: "/users" },
+    { icon: Users, label: "Schools", path: "/schools" },
+    { icon: CreditCard, label: "Finance", path: "/payments" },
     { icon: BarChart3, label: "Academics", path: "/dashboard?tab=academics" },
     { icon: Package, label: "Inventory", path: "/inventory" },
     { icon: Settings, label: "Settings", path: "/settings" },

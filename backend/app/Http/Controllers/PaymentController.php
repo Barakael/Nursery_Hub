@@ -11,11 +11,21 @@ use Illuminate\Http\Request;
 
 class PaymentController extends Controller
 {
+    private function schoolId(Request $request): int
+    {
+        $user = $request->user();
+        if ($user->isAdmin()) {
+            $id = $request->query('school_id', $user->school_id);
+            return $id ? (int) $id : \App\Models\School::value('id');
+        }
+        return (int) $user->school_id;
+    }
+
     public function index(Request $request)
     {
-        $user  = $request->user();
+        $schoolId = $this->schoolId($request);
         $query = Payment::with(['student', 'feeStructure', 'recorder'])
-            ->whereHas('student', fn($q) => $q->where('school_id', $user->school_id));
+            ->whereHas('student', fn($q) => $q->where('school_id', $schoolId));
 
         if ($request->filled('fee_structure_id')) {
             $query->where('fee_structure_id', $request->fee_structure_id);
@@ -28,6 +38,10 @@ class PaymentController extends Controller
 
     public function byStudent(Student $student, Request $request)
     {
+        if ((int) $student->school_id !== $this->schoolId($request)) {
+            abort(403, 'You cannot access this student.');
+        }
+
         $payments = Payment::with(['feeStructure', 'recorder'])
             ->where('student_id', $student->id)
             ->orderByDesc('payment_date')
@@ -38,6 +52,10 @@ class PaymentController extends Controller
 
     public function studentBalance(Student $student, Request $request)
     {
+        if ((int) $student->school_id !== $this->schoolId($request)) {
+            abort(403, 'You cannot access this student.');
+        }
+
         $schoolId = $student->school_id;
 
         // Fetch ALL active fee structures for this student's class + school-wide ones
@@ -110,6 +128,12 @@ class PaymentController extends Controller
 
         // Validate amount doesn't exceed remaining balance
         $feeStructure = FeeStructure::findOrFail($data['fee_structure_id']);
+        $student = Student::findOrFail($data['student_id']);
+        $schoolId = $this->schoolId($request);
+
+        if ((int) $feeStructure->school_id !== $schoolId || (int) $student->school_id !== $schoolId) {
+            return response()->json(['message' => 'Student or fee structure not in your school scope.'], 403);
+        }
         $alreadyPaid  = Payment::where('student_id', $data['student_id'])
             ->where('fee_structure_id', $data['fee_structure_id'])
             ->sum('amount_paid');
@@ -128,6 +152,11 @@ class PaymentController extends Controller
 
     public function destroy(Payment $payment)
     {
+        $schoolId = $this->schoolId(request());
+        if ((int) $payment->student?->school_id !== $schoolId) {
+            abort(403, 'You cannot delete this payment.');
+        }
+
         $payment->delete();
         return response()->json(['message' => 'Payment deleted.']);
     }

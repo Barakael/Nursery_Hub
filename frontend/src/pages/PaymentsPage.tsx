@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
-import { CheckCircle, AlertCircle, PlusCircle, Loader2, Download, FileSpreadsheet, FileText, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { AlertCircle, CheckCircle, Loader2, PlusCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSchools } from "@/hooks/useSchools";
 import { useStudents } from "@/hooks/useStudents";
 import { usePayments, useStudentBalance, useStudentPayments, useRecordPayment } from "@/hooks/usePayments";
-import { useOverviewReport } from "@/hooks/useReports";
+import { useFeeStructureReport, useOverviewReport } from "@/hooks/useReports";
 import { useFeeStructures } from "@/hooks/useFeeStructures";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -23,19 +24,40 @@ const methodLabel: Record<string, string> = {
 
 // ── Admin / School Manager view ──────────────────────────────────────────────
 const StaffFinanceView = () => {
-  const { data: overview } = useOverviewReport();
-  const { data: payments = [], isLoading } = usePayments();
-  const { data: studentsData } = useStudents();
-  const { data: feeStructures = [] } = useFeeStructures();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const { data: schools = [] } = useSchools();
+  const [selectedSchoolId, setSelectedSchoolId] = useState<number | undefined>(user?.school_id);
+  const effectiveSchoolId = isAdmin ? selectedSchoolId : undefined;
+
+  const [activeTab, setActiveTab] = useState<"general" | number>("general");
+
+  const { data: overview } = useOverviewReport({
+    school_id: effectiveSchoolId,
+    fee_structure_id: activeTab === "general" ? undefined : activeTab,
+  });
+  const { data: structureReport } = useFeeStructureReport(
+    activeTab === "general" ? undefined : activeTab,
+    { school_id: effectiveSchoolId }
+  );
+  const { data: payments = [], isLoading } = usePayments({
+    school_id: effectiveSchoolId,
+    fee_structure_id: activeTab === "general" ? undefined : activeTab,
+  });
+  const { data: studentsData } = useStudents(
+    effectiveSchoolId ? { school_id: effectiveSchoolId } : undefined
+  );
+  const { data: feeStructures = [] } = useFeeStructures({
+    school_id: effectiveSchoolId,
+    is_active: true,
+  });
   const recordPayment = useRecordPayment();
 
   const [lookupId, setLookupId] = useState("");
   const [lookupSearch, setLookupSearch] = useState("");
   const [lookupOpen, setLookupOpen] = useState(false);
-  const { data: lookupBalance } = useStudentBalance(Number(lookupId) || 0);
-  const { data: lookupPayments = [] } = useStudentPayments(Number(lookupId) || 0);
-
-  const [showDownload, setShowDownload] = useState(false);
+  const { data: lookupBalance } = useStudentBalance(Number(lookupId) || 0, { school_id: effectiveSchoolId });
+  const { data: lookupPayments = [] } = useStudentPayments(Number(lookupId) || 0, { school_id: effectiveSchoolId });
 
   const classSummary = useMemo(() => {
     if (!overview?.students?.length) return [];
@@ -55,99 +77,6 @@ const StaffFinanceView = () => {
     return Object.values(map).sort((a, b) => a.class_name.localeCompare(b.class_name));
   }, [overview?.students]);
 
-  const downloadCSV = () => {
-    if (!overview?.students?.length) return;
-    // Group students by class, sorted alphabetically
-    const groups: Record<string, typeof overview.students> = {};
-    overview.students.forEach((s) => {
-      if (!groups[s.class_name]) groups[s.class_name] = [];
-      groups[s.class_name].push(s);
-    });
-    const header = ["Name", "Class", "Total Fees (TSh)", "Paid (TSh)", "Pending (TSh)"];
-    const lines: string[] = [header.join(",")];
-    Object.keys(groups).sort().forEach((className) => {
-      lines.push(""); // blank separator
-      lines.push(`"── ${className} ──","","","",""`);
-      groups[className].forEach((s) => {
-        lines.push([`"${s.name}"`, `"${s.class_name}"`, s.total_fees, s.total_paid, s.remaining].join(","));
-      });
-      // Class subtotal
-      const total = groups[className].reduce((acc, s) => acc + s.total_fees, 0);
-      const paid  = groups[className].reduce((acc, s) => acc + s.total_paid, 0);
-      const rem   = groups[className].reduce((acc, s) => acc + s.remaining, 0);
-      lines.push([`"Subtotal (${className})"`, `""`, total, paid, rem].join(","));
-    });
-    const a = Object.assign(document.createElement("a"), {
-      href: URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" })),
-      download: "student-payments-by-class.csv",
-    });
-    a.click();
-    setShowDownload(false);
-  };
-
-  const downloadPDF = () => {
-    if (!overview?.students?.length) return;
-    // Group students by class, sorted alphabetically
-    const groups: Record<string, typeof overview.students> = {};
-    overview.students.forEach((s) => {
-      if (!groups[s.class_name]) groups[s.class_name] = [];
-      groups[s.class_name].push(s);
-    });
-    const classTables = Object.keys(groups).sort().map((className) => {
-      const classStudents = groups[className];
-      const total = classStudents.reduce((acc, s) => acc + s.total_fees, 0);
-      const paid  = classStudents.reduce((acc, s) => acc + s.total_paid, 0);
-      const rem   = classStudents.reduce((acc, s) => acc + s.remaining, 0);
-      const studentRows = classStudents
-        .map((s) => `<tr><td>${s.name}</td><td>TSh ${s.total_fees.toLocaleString()}</td><td>TSh ${s.total_paid.toLocaleString()}</td><td>TSh ${s.remaining.toLocaleString()}</td></tr>`)
-        .join("");
-      return `
-        <div class="class-section">
-          <h2>${className}</h2>
-          <table>
-            <thead><tr><th>Name</th><th>Total Fees</th><th>Paid</th><th>Pending</th></tr></thead>
-            <tbody>
-              ${studentRows}
-              <tr class="subtotal">
-                <td><strong>Subtotal</strong></td>
-                <td><strong>TSh ${total.toLocaleString()}</strong></td>
-                <td><strong>TSh ${paid.toLocaleString()}</strong></td>
-                <td><strong>TSh ${rem.toLocaleString()}</strong></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>`;
-    }).join("");
-    const html = `<html><head><title>Student Payments by Class</title><style>
-      body{font-family:sans-serif;padding:24px;color:#111}
-      h1{font-size:18px;margin-bottom:4px}
-      .subtitle{font-size:11px;color:#666;margin-bottom:20px}
-      .class-section{margin-bottom:28px;page-break-inside:avoid}
-      h2{font-size:13px;font-weight:700;margin:0 0 6px;padding:6px 10px;background:#f0f4ff;border-left:4px solid #020884;border-radius:4px}
-      table{border-collapse:collapse;width:100%;margin-bottom:4px}
-      th,td{border:1px solid #ddd;padding:6px 10px;font-size:11px;text-align:left}
-      th{background:#f5f5f5;font-weight:600}
-      tr:nth-child(even){background:#fafafa}
-      tr.subtotal td{background:#f0f4ff;font-size:11px}
-      @media print{.class-section{page-break-inside:avoid}}
-    </style></head><body>
-      <h1>Student Payment Report</h1>
-      <p class="subtitle">Generated ${new Date().toLocaleDateString()} &mdash; ${overview.students.length} students</p>
-      ${classTables}
-    </body></html>`;
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
-    setShowDownload(false);
-  };
-
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     student_id: "",
@@ -160,7 +89,10 @@ const StaffFinanceView = () => {
   });
   const [formError, setFormError] = useState("");
 
-  const students = studentsData?.data ?? [];
+  const students = (studentsData?.data ?? []).filter((s) => {
+    if (!effectiveSchoolId) return true;
+    return s.school_id === effectiveSchoolId;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,19 +119,69 @@ const StaffFinanceView = () => {
     }
   };
 
-  const collected = overview?.total_collected ?? 0;
-  const totalFees = overview?.total_fees ?? 0;
-  const pct = overview?.collection_percent ?? 0;
+  const collected = structureReport?.total_collected ?? overview?.total_collected ?? 0;
+  const totalFees = structureReport?.total_fees ?? overview?.total_fees ?? 0;
+  const pct = structureReport?.collection_percent ?? overview?.collection_percent ?? 0;
 
   return (
     <div className="animate-fade-in space-y-6">
+      {isAdmin && (
+        <div className="rounded-2xl bg-card p-4 shadow-card">
+          <label className="mb-2 block text-xs font-semibold text-muted-foreground">School</label>
+          <Select
+            value={selectedSchoolId ? String(selectedSchoolId) : ""}
+            onValueChange={(v) => {
+              setSelectedSchoolId(Number(v));
+              setActiveTab("general");
+            }}
+          >
+            <SelectTrigger><SelectValue placeholder="Select school" /></SelectTrigger>
+            <SelectContent>
+              {schools.map((school) => (
+                <SelectItem key={school.id} value={String(school.id)}>
+                  {school.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      <div className="flex gap-2 overflow-x-auto rounded-2xl bg-card p-1.5 shadow-soft">
+        <button
+          onClick={() => setActiveTab("general")}
+          className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition ${
+            activeTab === "general"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          General
+        </button>
+        {feeStructures.map((fs) => (
+          <button
+            key={fs.id}
+            onClick={() => setActiveTab(fs.id)}
+            className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition ${
+              activeTab === fs.id
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {fs.name}
+          </button>
+        ))}
+      </div>
+
       {/* Summary Banner */}
       <div className="rounded-2xl bg-primary p-5 shadow-card">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-primary-foreground/70">Total Fee Collection</p>
             <p className="text-3xl font-extrabold text-primary-foreground">{fmt(collected)}</p>
-            <p className="mt-0.5 text-xs text-primary-foreground/60">of {fmt(totalFees)} target</p>
+            <p className="mt-0.5 text-xs text-primary-foreground/60">
+              of {fmt(totalFees)} target {activeTab === "general" ? "(all structures)" : "(selected structure)"}
+            </p>
           </div>
           <button
             onClick={() => setOpen(true)}
@@ -215,7 +197,7 @@ const StaffFinanceView = () => {
         <p className="mt-2 text-xs text-primary-foreground/60">{pct}% collected</p>
       </div>
 
-          {/* Student Payment Lookup */}
+      {/* Student Payment Lookup */}
       <div className="rounded-2xl bg-card p-5 shadow-card">
         <h3 className="mb-3 font-bold text-card-foreground">Student Payment Lookup</h3>
         <div className="relative">
@@ -362,55 +344,57 @@ const StaffFinanceView = () => {
         </div>
       </div>
 
-  
-
-    
-
-      {/* Per-Fee-Structure Collection Summary */}
-      {feeStructures.length > 0 && (
+      {/* General page shows class summary, structure tabs show student rows */}
+      {activeTab === "general" ? (
         <div className="rounded-2xl bg-card p-5 shadow-card">
-          <h3 className="mb-4 font-bold text-card-foreground">Collection by Fee Structure</h3>
-          <div className="space-y-3">
-            {feeStructures.map((fs) => {
-              const fsCollected = fs.collected ?? 0;
-              const fsPending = fs.pending ?? 0;
-              const fsPct = fs.collection_percent ?? 0;
-              return (
-                <div key={fs.id} className="rounded-xl border border-border p-3 space-y-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm font-bold text-card-foreground">{fs.name}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {[fs.term, fs.academic_year, fs.class_name ?? "All classes"].filter(Boolean).join(" · ")}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-bold text-card-foreground">{fmt(fs.total_amount)}</p>
-                      <p className="text-[10px] text-muted-foreground">per student</p>
-                    </div>
+          <h3 className="mb-4 font-bold text-card-foreground">Class Finance Summary</h3>
+          {classSummary.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No class data yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {classSummary.map((row) => (
+                <div key={row.class_name} className="rounded-xl border border-border p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-card-foreground">{row.class_name}</p>
+                    <p className="text-xs text-muted-foreground">{row.count} students</p>
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-accent">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${Math.min(fsPct, 100)}%`,
-                        backgroundColor: fsPct >= 100 ? "#15803d" : fsPct > 0 ? "#ca8a04" : "#020884",
-                      }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-[11px]">
-                    <span className="text-muted-foreground">
-                      Collected: <span className="font-semibold" style={{ color: "#15803d" }}>{fmt(fsCollected)}</span>
-                    </span>
-                    <span className="text-muted-foreground">
-                      Pending: <span className="font-semibold text-destructive">{fmt(fsPending)}</span>
-                    </span>
-                    <span className="font-semibold text-muted-foreground">{fsPct}%</span>
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                    <div>Expected: <span className="font-semibold">{fmt(row.total)}</span></div>
+                    <div>Collected: <span className="font-semibold">{fmt(row.paid)}</span></div>
+                    <div>Pending: <span className="font-semibold">{fmt(row.remaining)}</span></div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-2xl bg-card p-5 shadow-card">
+          <h3 className="mb-4 font-bold text-card-foreground">
+            {structureReport?.fee_structure.name ?? "Fee structure"} Report
+          </h3>
+          {!structureReport ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {structureReport.students.map((student) => (
+                <div key={student.id} className="rounded-xl border border-border p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-card-foreground">{student.name}</p>
+                      <p className="text-xs text-muted-foreground">{student.class_name}</p>
+                    </div>
+                    <div className="text-right text-xs">
+                      <p>Paid: <span className="font-semibold">{fmt(student.total_paid)}</span></p>
+                      <p>Due: <span className="font-semibold">{fmt(student.remaining)}</span></p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -549,37 +533,6 @@ const StaffFinanceView = () => {
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* ── Floating Download FAB ── */}
-      {overview?.students?.length ? (
-        <div className="fixed bottom-24 right-4 z-50 md:bottom-8 md:right-8 flex flex-col items-end gap-2">
-          {showDownload && (
-            <div className="flex flex-col gap-2 mb-1">
-              <button
-                onClick={downloadCSV}
-                className="flex items-center gap-2 rounded-2xl bg-card border border-border px-4 py-2.5 text-sm font-semibold shadow-lg hover:bg-accent transition-colors"
-              >
-                <FileSpreadsheet className="h-4 w-4" style={{ color: "#15803d" }} />
-                Excel (.csv)
-              </button>
-              <button
-                onClick={downloadPDF}
-                className="flex items-center gap-2 rounded-2xl bg-card border border-border px-4 py-2.5 text-sm font-semibold shadow-lg hover:bg-accent transition-colors"
-              >
-                <FileText className="h-4 w-4" style={{ color: "#020884" }} />
-                PDF (print)
-              </button>
-            </div>
-          )}
-          <button
-            onClick={() => setShowDownload((v) => !v)}
-            className="flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition-opacity p-3.5"
-            title="Download student payments"
-          >
-            {showDownload ? <X className="h-5 w-5" /> : <Download className="h-5 w-5" />}
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 };

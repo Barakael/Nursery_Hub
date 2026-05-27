@@ -33,6 +33,30 @@ export interface OverviewReport {
   }>;
 }
 
+export interface FeeStructureReport {
+  fee_structure: {
+    id: number;
+    name: string;
+    term?: string | null;
+    academic_year?: string | null;
+    class_id?: number | null;
+    class_name?: string | null;
+  };
+  total_students: number;
+  total_fees: number;
+  total_collected: number;
+  remaining: number;
+  collection_percent: number;
+  students: Array<{
+    id: number;
+    name: string;
+    class_name: string;
+    total_fees: number;
+    total_paid: number;
+    remaining: number;
+  }>;
+}
+
 export interface ClassPerformanceReport {
   class_id: number;
   class_name: string;
@@ -97,11 +121,21 @@ export const useClassStudentScores = (classId: number, params?: { term?: string;
     enabled: !!classId,
   });
 
-export const useOverviewReport = () =>
+export const useOverviewReport = (params?: { school_id?: number; fee_structure_id?: number }) =>
   useQuery({
-    queryKey: ["reports", "overview"],
+    queryKey: ["reports", "overview", params],
     queryFn: () =>
-      api.get("/v1/reports/overview").then((r) => r.data as OverviewReport),
+      api.get("/v1/reports/overview", { params }).then((r) => r.data as OverviewReport),
+  });
+
+export const useFeeStructureReport = (feeStructureId?: number, params?: { school_id?: number }) =>
+  useQuery({
+    queryKey: ["reports", "fee-structure", feeStructureId, params],
+    queryFn: () =>
+      api
+        .get(`/v1/reports/fee-structure/${feeStructureId}`, { params })
+        .then((r) => r.data as FeeStructureReport),
+    enabled: !!feeStructureId,
   });
 
 export const useClassReport = (classId: number) =>

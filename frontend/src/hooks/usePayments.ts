@@ -35,28 +35,28 @@ export interface StudentBalance {
   structures?: FeeStructureBalance[];
 }
 
-export const usePayments = () =>
+export const usePayments = (params?: { school_id?: number; fee_structure_id?: number }) =>
   useQuery({
-    queryKey: ["payments"],
-    queryFn: () => api.get("/v1/payments").then((r) => r.data.data as Payment[]),
+    queryKey: ["payments", params],
+    queryFn: () => api.get("/v1/payments", { params }).then((r) => r.data.data as Payment[]),
   });
 
-export const useStudentPayments = (studentId: number) =>
+export const useStudentPayments = (studentId: number, params?: { school_id?: number }) =>
   useQuery({
-    queryKey: ["payments", "student", studentId],
+    queryKey: ["payments", "student", studentId, params],
     queryFn: () =>
       api
-        .get(`/v1/payments/student/${studentId}`)
+        .get(`/v1/payments/student/${studentId}`, { params })
         .then((r) => r.data.data as Payment[]),
     enabled: !!studentId,
   });
 
-export const useStudentBalance = (studentId: number) =>
+export const useStudentBalance = (studentId: number, params?: { school_id?: number }) =>
   useQuery({
-    queryKey: ["payments", "balance", studentId],
+    queryKey: ["payments", "balance", studentId, params],
     queryFn: () =>
       api
-        .get(`/v1/payments/student/${studentId}/balance`)
+        .get(`/v1/payments/student/${studentId}/balance`, { params })
         .then((r) => r.data as StudentBalance),
     enabled: !!studentId,
   });
@@ -73,6 +73,10 @@ export const useRecordPayment = () => {
       reference?: string;
       notes?: string;
     }) => api.post("/v1/payments", data).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["payments"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["payments"] });
+      qc.invalidateQueries({ queryKey: ["reports"] });
+      qc.invalidateQueries({ queryKey: ["fee-structures"] });
+    },
   });
 };

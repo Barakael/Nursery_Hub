@@ -13,6 +13,7 @@ import {
   useDeleteClass,
 } from "@/hooks/useClasses";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMySchoolSubscription } from "@/hooks/useSubscriptions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,6 +30,59 @@ const TERMS = ["First", "Second", "Third"];
 const YEAR = new Date().getFullYear();
 const EMPTY_FEE = { name: "", amount: "", term: "First", year: String(YEAR), class_ids: [] as string[] };
 const fmt = (n: number) => `TSh ${(n ?? 0).toLocaleString()}`;
+
+const SubscriptionTab = () => {
+  const { data, isLoading } = useMySchoolSubscription();
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-10">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="rounded-2xl bg-card p-5 shadow-card">
+        <h3 className="font-semibold text-foreground">Subscription</h3>
+        <p className="mt-2 text-sm text-muted-foreground">No subscription assigned yet. Contact system admin.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl bg-card p-5 shadow-card space-y-3">
+      <h3 className="font-semibold text-foreground">Subscription</h3>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <p className="text-xs text-muted-foreground">Plan</p>
+          <p className="font-semibold text-foreground">{data.plan?.name ?? "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Status</p>
+          <p className="font-semibold capitalize text-foreground">{data.status}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Starts On</p>
+          <p className="font-semibold text-foreground">{data.starts_on ?? "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Ends On</p>
+          <p className="font-semibold text-foreground">{data.ends_on ?? "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Price</p>
+          <p className="font-semibold text-foreground">{fmt(data.plan?.price ?? 0)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Billing Cycle</p>
+          <p className="font-semibold capitalize text-foreground">{data.plan?.billing_cycle ?? "—"}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ─── Profile Tab ─────────────────────────────────────────────────────────────
 const ProfileTab = () => {
@@ -519,12 +573,13 @@ const FeesTab = () => {
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-type Tab = "profile" | "classes" | "fees";
+type Tab = "profile" | "classes" | "fees" | "subscription";
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "profile", label: "Profile", icon: User },
   { id: "classes", label: "Classes", icon: BookOpen },
   { id: "fees", label: "Fee Structures", icon: DollarSign },
+  { id: "subscription", label: "Subscription", icon: DollarSign },
 ];
 
 const SettingsPage = () => {
@@ -532,7 +587,9 @@ const SettingsPage = () => {
   const isSchoolOrAdmin = user?.role === "admin" || user?.role === "school";
   const [tab, setTab] = useState<Tab>("profile");
 
-  const visibleTabs = isSchoolOrAdmin ? TABS : TABS.filter((t) => t.id === "profile");
+  const visibleTabs = isSchoolOrAdmin
+    ? TABS.filter((t) => (user?.role === "school" ? true : t.id !== "subscription"))
+    : TABS.filter((t) => t.id === "profile");
 
   return (
     <div className="animate-fade-in space-y-5">
@@ -559,6 +616,7 @@ const SettingsPage = () => {
       {tab === "profile" && <ProfileTab />}
       {tab === "classes" && isSchoolOrAdmin && <ClassesTab />}
       {tab === "fees" && isSchoolOrAdmin && <FeesTab />}
+      {tab === "subscription" && user?.role === "school" && <SubscriptionTab />}
     </div>
   );
 };

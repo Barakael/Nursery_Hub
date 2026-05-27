@@ -13,12 +13,20 @@ use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
+    private function schoolId(Request $request): int
+    {
+        $user = $request->user();
+        if ($user->isAdmin()) {
+            $id = $request->query('school_id', $user->school_id);
+            return $id ? (int) $id : School::value('id');
+        }
+        return (int) $user->school_id;
+    }
+
     public function overview(Request $request)
     {
-        $user     = $request->user();
-        $schoolId = $user->isAdmin()
-            ? ($request->query('school_id') ?? $user->school_id)
-            : $user->school_id;
+        $schoolId = $this->schoolId($request);
+        $feeStructureFilter = $request->integer('fee_structure_id');
 
         $totalStudents = Student::where('school_id', $schoolId)->count();
         $totalClasses  = SchoolClass::where('school_id', $schoolId)->count();
@@ -41,7 +49,13 @@ class ReportController extends Controller
                 ->where(function ($q) use ($s) {
                     $q->where('class_id', $s->class_id)
                       ->orWhereNull('class_id');
-                })
+                });
+
+            if ($feeStructureFilter) {
+                $feeStructuresForStudent->where('id', $feeStructureFilter);
+            }
+
+            $feeStructuresForStudent = $feeStructuresForStudent
                 ->get();
 
             if ($feeStructuresForStudent->isEmpty()) continue;
@@ -121,6 +135,62 @@ class ReportController extends Controller
             'students'           => $studentPayments,
             'enrollment_by_class'=> $enrollmentByClass,
             'recent_admissions'  => $recentAdmissions,
+        ]);
+    }
+
+    public function feeStructureOverview(FeeStructure $feeStructure, Request $request)
+    {
+        $schoolId = $this->schoolId($request);
+        if ((int) $feeStructure->school_id !== $schoolId) {
+            abort(403, 'You cannot access this fee structure report.');
+        }
+
+        $students = Student::with('schoolClass')
+            ->where('school_id', $schoolId)
+            ->when($feeStructure->class_id, fn ($q) => $q->where('class_id', $feeStructure->class_id))
+            ->orderBy('name')
+            ->get();
+
+        $rows = [];
+        $expected = 0;
+        $collected = 0;
+
+        foreach ($students as $student) {
+            $paid = (float) Payment::where('student_id', $student->id)
+                ->where('fee_structure_id', $feeStructure->id)
+                ->sum('amount_paid');
+
+            $expected += (float) $feeStructure->total_amount;
+            $collected += $paid;
+
+            $rows[] = [
+                'id' => $student->id,
+                'name' => $student->name,
+                'class_name' => $student->schoolClass?->name ?? '—',
+                'total_fees' => (float) $feeStructure->total_amount,
+                'total_paid' => $paid,
+                'remaining' => max(0, (float) $feeStructure->total_amount - $paid),
+            ];
+        }
+
+        $remaining = max(0, $expected - $collected);
+        $pct = $expected > 0 ? round(($collected / $expected) * 100, 1) : 0;
+
+        return response()->json([
+            'fee_structure' => [
+                'id' => $feeStructure->id,
+                'name' => $feeStructure->name,
+                'term' => $feeStructure->term,
+                'academic_year' => $feeStructure->academic_year,
+                'class_id' => $feeStructure->class_id,
+                'class_name' => $feeStructure->schoolClass?->name,
+            ],
+            'total_students' => $students->count(),
+            'total_fees' => $expected,
+            'total_collected' => $collected,
+            'remaining' => $remaining,
+            'collection_percent' => $pct,
+            'students' => $rows,
         ]);
     }
 

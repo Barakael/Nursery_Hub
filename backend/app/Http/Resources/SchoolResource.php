@@ -18,6 +18,8 @@ class SchoolResource extends JsonResource
             'logo'     => $this->logo,
             'is_active'=> (bool) $this->is_active,
             'settings' => $this->settings,
+            'students_count' => $this->whenCounted('students'),
+            'classes_count' => $this->whenCounted('classes'),
             'manager'  => $this->whenLoaded('users', function () {
                 $manager = $this->users->firstWhere('role', 'school');
                 if (!$manager) {

@@ -15,11 +15,13 @@ class School extends Model
         'phone',
         'email',
         'logo',
+        'is_active',
         'settings',
     ];
 
     protected $casts = [
         'settings' => 'array',
+        'is_active' => 'boolean',
     ];
 
     public function users()
@@ -45,5 +47,15 @@ class School extends Model
     public function timetableSlots()
     {
         return $this->hasMany(TimetableSlot::class);
+    }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(SchoolSubscription::class);
+    }
+
+    public function currentSubscription()
+    {
+        return $this->hasOne(SchoolSubscription::class)->latestOfMany();
     }
 }

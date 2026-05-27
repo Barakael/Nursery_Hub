@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
+            'school.active' => \App\Http\Middleware\EnsureSchoolIsActive::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

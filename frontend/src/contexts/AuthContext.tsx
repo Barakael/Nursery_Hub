@@ -11,7 +11,21 @@ export interface AuthUser {
   avatar?: string;
   phone?: string;
   school_id?: number;
-  school?: { id: number; name: string } | null;
+  school?: {
+    id: number;
+    name: string;
+    logo?: string | null;
+    is_active?: boolean;
+    current_subscription?: {
+      id: number;
+      status: string;
+      starts_on?: string | null;
+      ends_on?: string | null;
+      plan_name?: string | null;
+      plan_price?: number | null;
+      plan_cycle?: string | null;
+    } | null;
+  } | null;
   children?: { id: number; name: string; class_id?: number; class_name?: string }[]; // populated for parent role
   childNames?: string[]; // derived from children
   can_manage_timetable?: boolean;
